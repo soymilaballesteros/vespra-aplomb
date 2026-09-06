@@ -1,41 +1,27 @@
-/* Dior no es cine negro: es gris de día. Su registro real es página clara,
-   tipografía negra y producto negro. Por eso esta web es clara de arriba abajo
-   y solo se oscurece para cerrar.
-
-   Tres suelos:
-   ─ EL SET     gris perla. El mismo ciclorama sobre el que está fotografiado el
-                zapato, así que el escenario y la fotografía son el mismo plano.
-   ─ EL PAPEL   hueso. Donde manda el texto.
-   ─ EL CIERRE  charol. El negro del propio producto, una sola vez, al final.
+/* Un solo suelo. La página es un papel crema, cálido, de arriba abajo, y el
+   producto es lo único que tiene color: pitón rojo, negro y crema, y una suela
+   lacada en rojo. Del zapato sale el único acento de la web —ese rojo— y se
+   gasta en muy pocos sitios: la espina, el hito activo, el foco del formulario
+   y el trazo del cambrillón en el plano. Todo lo demás es tinta sobre papel.
 
    Los colores crudos viven arriba. Debajo hay una capa semántica (--bg, --fg,
-   --accent…) que es la ÚNICA que usa el resto del CSS: una sección cambia de
-   suelo con una clase y no hay que duplicar una sola regla. */
+   --accent…) que es la ÚNICA que usa el resto del CSS. */
 :root {
   /* ── Crudos ─────────────────────────────────────────────── */
-  --pearl:  #B7B4AF;   /* el set */
-  --bone:   #E8E4DC;   /* el papel */
-  --charol: #0B0B0D;   /* el negro del producto */
-  --ivory:  #EFEBE2;   /* el canto de la suela: la firma de la casa */
-  --slate:  #56534C;   /* secundario sobre papel */
-  --stone:  #4E4B45;   /* secundario sobre el set */
-  --fog:    #8E8B84;   /* secundario sobre charol */
+  --cream:   #F1EAE0;   /* el papel */
+  --cream-2: #E7DFD2;   /* el papel en sombra: el escenario de las secuencias */
+  --ink:     #151315;   /* la tinta */
+  --ink-2:   #5B5550;   /* la tinta rebajada: 6,2:1 sobre crema */
+  --lacquer: #C1121F;   /* la suela. 5,4:1 sobre crema: vale para texto */
 
-  /* El ÚNICO color de la página, y no es un color de marca inventado: es el
-     acero del cambrillón. Aparece en la línea vertical que recorre la web, en
-     el trazo grueso del plano y en nada más. Todo lo demás es negro sobre claro. */
-  --steel:      #4C585F;
-  --steel-set:  #3D484F;   /* sobre gris perla, que es más oscuro que el papel */
-  --steel-dark: #9BA6AC;   /* sobre charol */
-
-  /* ── Semánticos · suelo por defecto: el papel ───────────── */
-  --bg:          var(--bone);
-  --bg-2:        #DFDAD0;
-  --fg:          var(--charol);
-  --fg-2:        var(--slate);
-  --accent:      var(--steel);
-  --rule:        rgba(11, 11, 13, 0.16);
-  --rule-strong: rgba(11, 11, 13, 0.30);
+  /* ── Semánticos ─────────────────────────────────────────── */
+  --bg:          var(--cream);
+  --bg-2:        var(--cream-2);
+  --fg:          var(--ink);
+  --fg-2:        var(--ink-2);
+  --accent:      var(--lacquer);
+  --rule:        rgba(21, 19, 21, 0.14);
+  --rule-strong: rgba(21, 19, 21, 0.30);
 
   /* ── Tipografía ─────────────────────────────────────────── */
   --display: 'Bodoni Moda Variable', Didot, 'Bodoni MT', 'Times New Roman', serif;
@@ -71,34 +57,6 @@
   /* Una sola curva para las apariciones: larga y sin rebote. El rebote es de
      producto digital; una casa de costura no rebota. */
   --ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* El escenario del producto. El fondo lo pinta el JS con el color REAL del set
-   medido por el build (--seq-bg); el gris perla de aquí es solo el respaldo
-   para el instante anterior a que el manifest esté leído. */
-.on-set {
-  --bg:          var(--pearl);
-  --bg-2:        #ABA8A3;
-  --fg:          var(--charol);
-  --fg-2:        var(--stone);
-  --accent:      var(--steel-set);
-  --rule:        rgba(11, 11, 13, 0.22);
-  --rule-strong: rgba(11, 11, 13, 0.36);
-  background: var(--seq-bg, var(--bg));
-  color: var(--fg);
-}
-
-/* El cierre. Una sola vez, y al final. */
-.on-dark {
-  --bg:          var(--charol);
-  --bg-2:        #17171A;
-  --fg:          var(--bone);
-  --fg-2:        var(--fog);
-  --accent:      var(--steel-dark);
-  --rule:        rgba(232, 228, 220, 0.14);
-  --rule-strong: rgba(232, 228, 220, 0.28);
-  background: var(--bg);
-  color: var(--fg);
 }
 
 /* Sin espina visible no hay nada que esquivar: márgenes simétricos.

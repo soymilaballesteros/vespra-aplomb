@@ -59,7 +59,7 @@ body::after {
    para que aguanten a 16 px; a 100 px hay que pedirle el corte de display o
    los finos salen romos y se pierde el contraste que define a una Didone.
    Solo se declara `opsz`: `wght` sigue viniendo de font-weight.  */
-.hero__title, .section-title, .seq__title, .manifesto__body,
+.hero__title, .section-title, .seq__heading, .detail__title, .manifesto__body,
 .year, .request__n, .plan__figure {
   font-variation-settings: 'opsz' var(--opsz-display);
 }

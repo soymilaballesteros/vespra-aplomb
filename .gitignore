@@ -16,3 +16,5 @@ assets/source/*.jpg
 /0*.png
 /*.png
 verify-out/
+shots/
+assets/source/ref/

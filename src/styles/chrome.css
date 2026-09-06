@@ -1,8 +1,7 @@
-/* ── LA ESPINA · EL CAMBRILLÓN ────────────────────────────────
-   Una única línea vertical de acero que recorre toda la página sin cortarse.
-   Es la misma pieza que sostiene el zapato: la lámina de acero templado que va
-   escondida en la suela y que la sección de Anatomía acaba enseñando.
-   El tramo lleno marca cuánto llevas leído, y las marcas son las secciones. */
+/* ── LA ESPINA · EL FILO DE LA SUELA ──────────────────────────
+   Una única línea vertical que recorre toda la página sin cortarse, en el rojo
+   de la suela: el mismo filo lacado que asoma a cada paso. Muy tenue en reposo
+   y rojo pleno en el tramo ya leído. Las marcas son las secciones. */
 .spine {
   position: fixed;
   left: var(--spine-x);
@@ -15,8 +14,7 @@
 .spine__track {
   position: absolute;
   inset: 0;
-  background: var(--chrome-rule);
-  transition: background 0.5s var(--ease);
+  background: rgba(193, 18, 31, 0.22);
 }
 /* Marcas de sección, como la escala de una regla. Las coloca spine.ts a partir
    de las mismas medidas cacheadas que ya usa para el relleno: cero lecturas
@@ -26,17 +24,15 @@
   left: -3px;
   width: 7px;
   height: 1px;
-  background: var(--chrome-rule-strong);
-  transition: background 0.5s var(--ease);
+  background: var(--rule-strong);
 }
 .spine__fill {
   position: absolute;
   inset-inline: 0;
   top: 0;
   height: 0%;
-  background: var(--chrome-steel);
+  background: var(--accent);
   transform-origin: top;
-  transition: background 0.5s var(--ease);
 }
 .spine__label {
   position: absolute;
@@ -47,9 +43,8 @@
   font-size: 0.625rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--chrome-fg-2);
+  color: var(--fg-2);
   white-space: nowrap;
-  transition: color 0.5s var(--ease);
 }
 @media (max-width: 700px) { .spine { display: none; } }
 
@@ -65,13 +60,12 @@
   padding-block: 0.9rem;
   padding-left: var(--content-inset);
   padding-right: var(--content-edge);
-  background: linear-gradient(to bottom, var(--chrome-bg) 32%, transparent);
-  color: var(--chrome-fg);
+  background: linear-gradient(to bottom, var(--bg) 32%, transparent);
+  color: var(--fg);
   /* Capa propia: Safari en iOS deja un rastro del contenido anterior al hacer
      scroll bajo un elemento fijo, y el logotipo se ve duplicado. */
   transform: translateZ(0);
   will-change: transform;
-  transition: color 0.5s var(--ease), background 0.5s var(--ease);
 }
 .wordmark {
   font-family: var(--display);
@@ -87,52 +81,23 @@
   font-size: 0.75rem;
   letter-spacing: 0.14em;
   white-space: nowrap;
-  color: var(--chrome-fg-2);
+  color: var(--fg-2);
   padding-block: 0.8rem;
   transition: color 0.35s var(--ease);
 }
-.topnav a:hover { color: var(--chrome-fg); }
+.topnav a:hover { color: var(--fg); }
 /* La llamada a la acción se distingue por el filete y por el peso del color,
    no por un color de acento: en una casa de costura el único color es el del
    producto. */
 .topnav__cta {
-  color: var(--chrome-fg);
-  box-shadow: inset 0 -1px 0 currentColor;
+  color: var(--fg);
+  box-shadow: inset 0 -1px 0 var(--accent);
 }
 @media (max-width: 380px) {
   .topnav__cta { font-size: 0.6875rem; letter-spacing: 0.1em; }
 }
 @media (max-width: 700px) {
   .topnav a:not(.topnav__cta) { display: none; }
-}
-
-/* ── El cromo cruza los tres suelos ───────────────────────────
-   .topbar y .spine son fijas: viven fuera de las secciones y por tanto fuera
-   del alcance de .on-set y .on-dark. spine.ts pone data-chrome en <html> según
-   qué sección pasa por detrás de la barra. Sin esto, la barra se queda con el
-   color de un suelo sobre otro y el logotipo desaparece. */
-:root {
-  --chrome-bg:          var(--bone);
-  --chrome-fg:          var(--charol);
-  --chrome-fg-2:        var(--slate);
-  --chrome-steel:       var(--steel);
-  --chrome-rule:        rgba(11, 11, 13, 0.16);
-  --chrome-rule-strong: rgba(11, 11, 13, 0.30);
-}
-[data-chrome='set'] {
-  --chrome-bg:          var(--pearl);
-  --chrome-fg-2:        var(--stone);
-  --chrome-steel:       var(--steel-set);
-  --chrome-rule:        rgba(11, 11, 13, 0.22);
-  --chrome-rule-strong: rgba(11, 11, 13, 0.36);
-}
-[data-chrome='dark'] {
-  --chrome-bg:          var(--charol);
-  --chrome-fg:          var(--bone);
-  --chrome-fg-2:        var(--fog);
-  --chrome-steel:       var(--steel-dark);
-  --chrome-rule:        rgba(232, 228, 220, 0.14);
-  --chrome-rule-strong: rgba(232, 228, 220, 0.28);
 }
 
 /* ── Pie ────────────────────────────────────────────────────── */

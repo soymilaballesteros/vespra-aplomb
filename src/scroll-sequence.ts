@@ -16,6 +16,12 @@ interface VariantMeta {
 }
 interface SequenceMeta {
   frames: number
+  /**
+   * Aún no hay fotogramas de esta secuencia: la sección arranca estática con su
+   * imagen de respaldo y no pide ni un fotograma. Lo escribe a mano quien deja
+   * el material provisional; `pnpm frames` lo borra al generar los reales.
+   */
+  placeholder?: boolean
   /** Color real del fondo del set, medido por el build. */
   background?: string
   desktop: VariantMeta
@@ -101,6 +107,15 @@ export interface ScrollSequenceOptions {
    * vive a la izquierda: con el producto centrado, el texto le cae encima.
    */
   focusX?: number
+  /**
+   * Cómo se encuadra el fotograma. `subject` (por defecto) dimensiona el
+   * PRODUCTO a una fracción del lienzo y rellena el resto con el color del set:
+   * es lo que quiere una pieza fotografiada quieta. `cover` llena el lienzo como
+   * `object-fit: cover`: es lo que quiere el paso, donde la mujer recorre el
+   * encuadre entero y su caja de sujeto es el ancho completo — con `subject` el
+   * fotograma se encogería al 52% del ancho.
+   */
+  fill?: 'subject' | 'cover'
   onProgress?: (progress: number) => void
 }
 
@@ -115,12 +130,13 @@ export class ScrollSequence {
   private readonly eager: boolean
   private readonly focusLandscape: number
   private readonly focusX: number
+  private readonly fillMode: 'subject' | 'cover'
   private readonly onProgress?: (p: number) => void
 
   private meta: SequenceMeta | undefined
   /** Color del set, y el mismo en rgba con alfa 0 para los degradados. */
-  private fill = '#0B0B0D'
-  private fillClear = 'rgba(11, 11, 13, 0)'
+  private fill = '#F1EAE0'
+  private fillClear = 'rgba(241, 234, 224, 0)'
   private variant: Variant = 'desktop'
   private count = 0
   private subject: SubjectBox = { x0: 0, x1: 1, y0: 0, y1: 1 }
@@ -148,6 +164,7 @@ export class ScrollSequence {
     this.eager = opts.eager ?? false
     this.focusLandscape = opts.focusLandscape ?? 0.5
     this.focusX = opts.focusX ?? 0.5
+    this.fillMode = opts.fill ?? 'subject'
     this.onProgress = opts.onProgress
 
     this.pin = this.section.querySelector<HTMLElement>('.seq__pin')!
@@ -174,8 +191,9 @@ export class ScrollSequence {
   init(): void {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    // Sin manifest, sin canvas o con reduce-motion: imagen estática, sin pin.
-    if (!this.meta || !this.ctx || reduced) {
+    // Sin manifest, sin fotogramas todavía, sin canvas o con reduce-motion:
+    // imagen estática, sin pin, y sin pedir un solo fotograma.
+    if (!this.meta || !this.meta.frames || this.meta.placeholder || !this.ctx || reduced) {
       this.goStatic()
       return
     }
@@ -375,7 +393,9 @@ export class ScrollSequence {
     const portrait = h > w
     const fillX = portrait ? FILL_PORTRAIT.x : FILL_LANDSCAPE.x
     const fillY = portrait ? FILL_PORTRAIT.y : FILL_LANDSCAPE.y
-    const scale = Math.min((w * fillX) / pw, (h * fillY) / ph)
+    const scale = this.fillMode === 'cover'
+      ? Math.max(w / iw, h / ih)
+      : Math.min((w * fillX) / pw, (h * fillY) / ph)
     const dw = iw * scale
     const dh = ih * scale
 
@@ -488,6 +508,8 @@ export class ScrollSequence {
       failures: this.failures,
       progress: Number(this.progress.toFixed(4)),
       static: this.isStatic,
+      placeholder: this.meta?.placeholder === true,
+      coarseStep: COARSE_STEP,
     }
   }
 }

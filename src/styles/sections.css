@@ -10,7 +10,7 @@
    que se pinta ya costó una vez 2,3 s de render delay.                   */
 .hero { position: relative; }
 
-.hero__stage { background: var(--seq-bg, var(--pearl)); }
+.hero__stage { background: var(--seq-bg, var(--bg-2)); }
 
 .hero__poster,
 .hero__poster img {
@@ -23,7 +23,9 @@
      con el color del ciclorama. Si el póster recortara a cover, el relevo del
      <img> al <canvas> daría un salto de escala bien visible. */
   object-fit: contain;
-  object-position: 63% 50%;
+  /* A la derecha del todo: el texto vive a la izquierda y el talón del zapato
+     es lo primero que se encontraría. */
+  object-position: 100% 50%;
 }
 
 /* El lienzo releva al póster en cuanto el JS ha dibujado en él el mismo
@@ -51,9 +53,9 @@
 .hero__title {
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(2.7rem, 6.4vw, 5.4rem);
-  line-height: 0.98;
-  letter-spacing: -0.022em;
+  font-size: clamp(2.9rem, 7vw, 6rem);
+  line-height: 0.96;
+  letter-spacing: -0.024em;
   text-wrap: balance;
 }
 
@@ -65,6 +67,71 @@
     gap: 1.1rem;
     max-width: none;
   }
+  .hero__poster img { object-position: 50% 30%; }
+}
+
+
+/* ── EL PASO ─────────────────────────────────────────────────
+   La mujer cruza la pantalla al ritmo del scroll. El texto va ARRIBA, no a la
+   izquierda: el clip deja vacío el tercio superior del encuadre a propósito
+   (cámara a la altura del tobillo) y así nunca se cruza con ella.        */
+.paso .seq__ui--top .lede { max-width: 40ch; }
+
+
+/* ── LA PUNTA ────────────────────────────────────────────────
+   Una macro fija que se acerca conforme bajas (src/detail.ts). El anclaje es
+   `position: sticky`, no un pin de ScrollTrigger: la altura de la sección la
+   sabe el CSS desde el primer layout, y nada de lo que hay debajo se mueve
+   cuando arranca el JS. La imagen y el texto van en dos columnas: la escama
+   es un fondo demasiado vivo para leer encima.                          */
+.detail { position: relative; height: 280svh; }
+.detail__pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 36%);
+  background: var(--bg-2);
+}
+.detail__frame { position: relative; overflow: hidden; }
+.detail__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 38%;
+  transform-origin: 50% 42%;
+  will-change: transform;
+}
+.detail__ui {
+  align-self: center;
+  display: grid;
+  gap: 1.4rem;
+  padding-left: clamp(1.75rem, 4vw, 4rem);
+  padding-right: var(--content-edge);
+}
+.detail__title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.04;
+  letter-spacing: -0.018em;
+  text-wrap: balance;
+}
+@media (max-aspect-ratio: 1 / 1) {
+  .detail__pin { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
+  .detail__ui {
+    padding: 1.5rem var(--content-edge) clamp(2rem, 6vh, 4rem) var(--content-inset);
+    gap: 1rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detail { height: auto; }
+  .detail__pin { position: static; height: auto; }
+  .detail__frame { aspect-ratio: 4 / 5; }
+  .detail__ui { padding-block: clamp(2rem, 6vh, 4rem); }
 }
 
 
@@ -362,10 +429,10 @@
 }
 .field input:hover { border-color: var(--fg-2); }
 .field input:focus { outline: none; border-color: var(--accent); }
-.field.is-bad input { border-color: #C0563C; }
+.field.is-bad input { border-color: var(--accent); }
 .field__error {
   font-size: 0.8125rem;
-  color: #D07A63;
+  color: var(--accent);
   min-height: 1.2em;
   opacity: 0;
   transition: opacity 0.3s var(--ease);

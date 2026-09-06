@@ -1,13 +1,23 @@
 # VESPRA — APLOMB
 
-Landing de lujo con dos secciones scroll-driven tipo Apple: el salón gira 360° en el hero
-y después se desmonta capa a capa, ambas enganchadas al scroll. No son vídeos: son
-secuencias de fotogramas WebP pintadas sobre `<canvas>`.
+Landing de lujo con tres secciones scroll-driven tipo Apple: el salón gira 360° en el hero,
+una mujer cruza la pantalla con él al ritmo del scroll y después se desmonta capa a capa.
+No son vídeos: son secuencias de fotogramas WebP pintadas sobre `<canvas>`. Además, una
+macro de la punta que se acerca al bajar y un alzado técnico en SVG que se traza solo.
 
-Maison ficticia creada como demostración. París, 1949. Modelo **Aplomb**, salón de 105 mm.
-El gancho: todo el peso pasa por una tapa de nueve milímetros, y lo que lo hace posible es
-el **cambrillón**, la lámina de acero templado escondida en la suela. De ahí sale la firma
-de la página — una única línea vertical de acero que la recorre entera sin cortarse.
+Maison ficticia creada como demostración. París, 1949. Modelo **Aplomb**: salón de pitón
+natural de 120 mm con la suela lacada en rojo. Dos ganchos: todo el peso pasa por una tapa
+de nueve milímetros (lo sostiene el **cambrillón**, la lámina de acero escondida en la suela),
+y el rojo de la suela solo se ve cuando la mujer se va. De ahí sale la firma de la página:
+una única línea vertical roja, el filo de la suela, que la recorre entera sin cortarse.
+
+## Estado del material
+
+Las tres secuencias están marcadas como **provisionales** en `src/frames.manifest.json`
+(`frames: 0, placeholder: true`): la web se ve con las fotos de referencia, estática, hasta
+que existan los clips. Los prompts y los ajustes exactos están en `assets/source/PROMPTS.md`.
+Cuando haya un clip, `pnpm frames --only <rotate|walk|explode>` lo convierte y esa sección
+pasa a animarse; las demás siguen con su foto.
 
 ## Requisitos
 
@@ -27,52 +37,53 @@ pnpm preview      # sirve dist/ en el puerto 4173
 pnpm verify       # comprobaciones de navegador contra el build de producción
 ```
 
-## Los dos suelos
+## Un solo suelo
 
-La página alterna dos fondos y eso es intencionado: el **escenario** negro donde manda el
-producto (hero y anatomía) y el **papel** marfil donde manda el texto (manifiesto, plano,
-ficha, casa, colección). Todo el CSS usa una capa semántica (`--bg`, `--fg`, `--accent`…)
-definida en `src/styles/tokens.css`; una sección cambia de suelo poniéndose `.on-paper` y
-no hay que duplicar ni una regla.
+La página es un papel crema de arriba abajo y el producto es lo único que tiene color. El
+único acento es el **rojo de la suela**, y se gasta en muy pocos sitios: la espina, el hito
+activo, el foco del formulario y el trazo del cambrillón en el plano. Todo el CSS usa una
+capa semántica (`--bg`, `--fg`, `--accent`…) definida en `src/styles/tokens.css`.
 
-El acento cambia con el suelo a propósito: sobre negro es **acero** (el cambrillón), sobre
-marfil es **burdeos**. Un burdeos sobre negro da 3,3:1 de contraste y no pasa AA en
-versalitas.
-
-La barra y la espina son fijas, así que `.on-paper` no las alcanza: `src/spine.ts` pone
-`chrome-on-paper` en `<html>` según qué sección pasa por detrás de la barra.
+El escenario de las secuencias no es un color escrito a mano: es el crema REAL del ciclorama,
+que el build mide del clip y guarda en el manifest (`background`). Por eso los clips tienen
+que rodarse sobre crema (`#EDE4D6`), no sobre blanco: un fondo blanco dejaría una caja sobre
+la página.
 
 ## Regenerar los fotogramas
 
 Los vídeos de origen no se versionan (son pesados y regenerables). Para reconstruir
 las secuencias hacen falta en `assets/source/`:
 
-- `product-ref.png` — imagen de referencia, 16:9
-- `product-rotate.mp4` — rotación 360°, cámara fija, velocidad constante
+- `product-ref.png` — imagen maestra, 16:9
+- `product-rotate.mp4` — giro 360°, cámara fija, velocidad constante
+- `product-walk.mp4` — la mujer cruza el encuadre de izquierda a derecha, cámara fija
 - `product-explode.mp4` — despiece por capas, cámara fija, movimiento lineal
-- opcionales: `atelier-montado.png`, `atelier-cambrillon.png`, `atelier-forrado.png` (4:5)
+- opcionales: `atelier-montado.png`, `atelier-cambrillon.png`, `atelier-laca.png` (4:5)
 
 Los prompts exactos están en `assets/source/PROMPTS.md`, con una regla que no es obvia:
-**el zapato tiene que ser más claro que el fondo**, porque el build lo localiza por
-luminosidad. Un zapato negro sobre fondo negro rompe la medición.
+**el zapato tiene que separarse del fondo por contraste**, porque el build lo localiza así.
+Y el fondo tiene que ser crema, no blanco.
 
 ```bash
-pnpm frames
+pnpm frames                  # las tres
+pnpm frames --only rotate    # solo una
 ```
 
 El script:
 
-1. Extrae N fotogramas repartidos uniformemente (`rotate` 100, `explode` 120).
+1. Extrae N fotogramas repartidos uniformemente (`rotate` 160, `walk` 160, `explode` 120).
 2. Mide la caja que ocupa el producto a lo largo de TODO el clip y elige a partir de ella
-   el recorte de móvil — nunca el centro del encuadre: la IA no centra el producto.
-3. Genera **dos juegos**: `desktop` (hasta 1440 px) y `mobile` (recorte vertical a 720 px).
+   el recorte — nunca el centro del encuadre: la IA no centra el producto. En el paso no
+   recorta (`tight: false`): el sujeto es el encuadre entero.
+3. Genera **dos juegos**: `desktop` (hasta 1920 px) y `mobile` (recorte vertical a 960 px).
    Nunca escala por encima del ancho real del origen.
-4. Convierte a WebP buscando la calidad que quepa en el presupuesto (de q72 a q48 y, si
-   hace falta, bajando resolución). **Presupuesto duro**: desktop ≤ 5 MB, mobile ≤ 2 MB.
+4. Convierte a WebP buscando la calidad que quepa en el presupuesto (de q82 a q58 y, si
+   hace falta, bajando resolución). **Presupuesto duro**: desktop ≤ 9 MB, mobile ≤ 3 MB.
 5. Deriva el póster del hero, las imágenes de respaldo y los tres retratos del atelier.
    Si existen las tres imágenes propias del atelier las usa; si no, recorta macros de la
    referencia.
-6. Escribe `src/frames.manifest.json` con el número REAL de fotogramas.
+6. Escribe `src/frames.manifest.json` con el número REAL de fotogramas, y borra la marca
+   `placeholder` de cada secuencia construida.
 
 > El manifest es lo que evita el fallo clásico de esta técnica: si el código asume 120
 > fotogramas y solo hay 119, salen 404 y el canvas se queda congelado. Los conteos
@@ -94,8 +105,14 @@ El script:
 - Que todos los bloques cuelgan del mismo raíl, y que en móvil los márgenes coinciden.
 - Que ninguna imagen está rota. *(Esta hace falta porque `vite preview` responde 200 con
   el index.html a rutas que no existen: un fichero que falta no sale como 404.)*
+- Que los `width`/`height` declarados en cada `<img>` tienen la proporción de la imagen real.
 - Que con `prefers-reduced-motion` las secciones pasan a estática y no se descarga ni un
   fotograma.
+
+Las secuencias con material provisional se saltan con un aviso, no con un fallo.
+
+`node scripts/shots.mjs <carpeta>` hace una captura por sección, en escritorio y en móvil,
+para la ronda de inspección visual.
 
 Lo que **no** cubre: Lighthouse. Ejecútalo dos veces en móvil y en escritorio; si una
 pasada da mucho menos que la otra, es un pico de TBT intermitente, no varianza.
@@ -127,6 +144,14 @@ Desde la consola, `window.__seq()` devuelve el mismo estado en JSON.
 `src/plan.ts` traza el alzado técnico de la sección "El plano" con el scroll. El estado
 por defecto del SVG es **dibujado**: es el JS quien lo esconde, así que sin JS o con
 reduce-motion el plano se ve entero.
+
+`src/detail.ts` acerca la macro de "La punta" con el scroll. El anclaje es `position:
+sticky`, no un pin: un pin añade altura al documento al crearse y desplaza todo lo que
+hay debajo (las marcas de la espina, por ejemplo).
+
+Encuadre por secuencia (`data-fill`): `subject` dimensiona el producto a una fracción del
+lienzo y rellena el resto con el crema del set (giro, despiece); `cover` llena el lienzo
+como `object-fit: cover` (el paso, donde la mujer recorre el encuadre entero).
 
 No se usa `scroll-behavior: smooth` en CSS: compite con el scrub de ScrollTrigger y hace
 que las secuencias vayan a tirones. El suavizado de los enlaces internos está en `src/nav.ts`.

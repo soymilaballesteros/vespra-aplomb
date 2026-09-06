@@ -1,15 +1,15 @@
 /* ── Secciones scroll-driven (canvas + secuencia de frames) ───
-   El escenario es el propio ciclorama sobre el que está fotografiado el zapato:
-   gris perla, no negro. El color exacto lo pone el JS en --seq-bg leyéndolo del
-   manifest, que lo mide del clip; el gris de aquí solo cubre el instante
-   anterior a que eso ocurra.                                     */
+   El escenario es el mismo papel de la página, en sombra: el ciclorama crema
+   sobre el que está fotografiado el zapato. El color exacto lo pone el JS en
+   --seq-bg leyéndolo del manifest, que lo mide del clip; el de aquí solo cubre
+   el instante anterior a que eso ocurra.                                    */
 .seq { position: relative; }
 
 .seq__pin {
   position: relative;
   height: 100svh;
   overflow: hidden;
-  background: var(--seq-bg, var(--pearl));
+  background: var(--seq-bg, var(--bg-2));
 }
 
 .seq__canvas,
@@ -41,10 +41,13 @@
   inset: 0;
   pointer-events: none;
   background: linear-gradient(to right,
-    rgba(232, 228, 220, 0.88) 0%,
-    rgba(232, 228, 220, 0.55) 22%,
-    rgba(232, 228, 220, 0) 48%);
+    rgba(241, 234, 224, 0.9) 0%,
+    rgba(241, 234, 224, 0.55) 22%,
+    rgba(241, 234, 224, 0) 48%);
 }
+/* En el paso la mujer recorre el encuadre entero: una banda a la izquierda la
+   lavaría justo al empezar. El texto vive arriba, donde el clip deja el aire. */
+.seq--cover .seq__pin::after { display: none; }
 
 .seq__ui {
   position: absolute;
@@ -57,6 +60,11 @@
   gap: 1.5rem;
   max-width: 30rem;
 }
+.seq__ui--top {
+  top: clamp(6.5rem, 16vh, 10rem);
+  transform: none;
+  max-width: 36rem;
+}
 .seq__heading {
   font-family: var(--display);
   font-weight: 400;
@@ -64,6 +72,7 @@
   font-size: clamp(2rem, 4.4vw, 3.2rem);
   line-height: 1.04;
   letter-spacing: -0.018em;
+  text-wrap: balance;
 }
 
 .seq__hint {
@@ -76,10 +85,11 @@
   color: var(--fg-2);
   transition: opacity 0.6s var(--ease);
 }
-.seq.is-scrubbing .seq__hint { opacity: 0; }
+.seq.is-scrubbing .seq__hint,
+.seq.is-static .seq__hint { opacity: 0; }
 @media (max-width: 700px) { .seq__hint { display: none; } }
 
-/* ── Los hitos del despiece ─────────────────────────────────── */
+/* ── Los hitos ───────────────────────────────────────────────── */
 .beats {
   list-style: none;
   padding: 0;
@@ -106,6 +116,42 @@
 .beat p { font-size: 0.9rem; color: var(--fg-2); max-width: 34ch; }
 @media (prefers-reduced-motion: reduce) { .beat { opacity: 1; } }
 
+/* ── Las notas del hero ──────────────────────────────────────────
+   Tres apuntes a la derecha del zapato que entran uno a uno conforme gira,
+   cuando el titular ya se ha retirado. Solo uno a la vez, y siempre en el
+   mismo sitio: por eso van apilados en absoluto y no en lista. */
+.hero__notes {
+  position: absolute;
+  z-index: 2;
+  right: var(--content-edge);
+  top: 50%;
+  width: min(22rem, 34vw);
+  transform: translateY(-50%);
+  display: block;
+}
+.hero__notes .beat {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  transform: translateY(-50%) translateY(10px);
+  opacity: 0;
+  padding-left: 0;
+  padding-right: 1.15rem;
+  border-left: 0;
+  border-right: 1px solid transparent;
+  text-align: right;
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease), border-color 0.7s var(--ease);
+}
+.hero__notes .beat.is-on {
+  opacity: 1;
+  transform: translateY(-50%);
+  border-right-color: var(--accent);
+}
+.hero__notes .beat p { margin-left: auto; }
+.hero__notes .beat h3 { font-size: clamp(1.5rem, 2.6vw, 2.1rem); }
+.hero.is-static .hero__notes { display: none; }
+@media (max-aspect-ratio: 1 / 1) { .hero__notes { display: none; } }
+
 /* ── Pantallas verticales ────────────────────────────────────
    Un salón de perfil es ancho y bajo. A pantalla completa en vertical, el
    ajuste `cover` recortaría más del 60% del ancho y lo dejaría sin punta ni
@@ -124,25 +170,58 @@
      degradado pasa a ser solo el asiento del texto, abajo. */
   .seq:not(.hero) .seq__pin::after {
     background: linear-gradient(to top,
-      rgba(232, 228, 220, 0.96) 0%,
-      rgba(232, 228, 220, 0.7) 24%,
-      rgba(232, 228, 220, 0) 46%);
+      rgba(241, 234, 224, 0.96) 0%,
+      rgba(241, 234, 224, 0.7) 24%,
+      rgba(241, 234, 224, 0) 46%);
   }
-  .seq__ui {
+  .seq__ui,
+  .seq__ui--top {
     top: auto;
     bottom: clamp(2rem, 6vh, 4rem);
     transform: none;
     gap: 1.1rem;
+    max-width: none;
   }
 }
 
-/* Con reduce-motion o sin JS la sección no se fija: altura normal + imagen. */
+/* ── Estático ────────────────────────────────────────────────
+   Con reduce-motion, sin JS, o mientras el material es provisional (frames: 0
+   en el manifest), la sección no se fija: un solo cuadro con la imagen de
+   respaldo. La imagen se CONTIENE, no cubre: el respaldo lleva el mismo fondo
+   crema que el escenario, así que lo que sobra alrededor es más escenario. */
 .seq.is-static .seq__pin { height: auto; aspect-ratio: 16 / 10; }
+.seq.is-static .seq__still { object-fit: contain; object-position: 100% 50%; }
+/* En el paso el texto va arriba a la izquierda: con el respaldo a la derecha
+   hay que acortarle la medida para que no se cruce con la fotografía. */
+.seq--cover.is-static .seq__ui--top { max-width: 24rem; }
 /* El hero conserva la pantalla completa aunque no se anime. */
 .hero.seq.is-static .seq__pin { height: 100svh; aspect-ratio: auto; }
-.seq.is-static .seq__still { position: static; aspect-ratio: auto; }
 .seq.is-static .seq__canvas { display: none; }
 .seq.is-static .beat { opacity: 1; border-left-color: var(--rule); }
+/* En vertical, estático = imagen a lo ancho y el texto justo debajo, en flujo.
+   Un pin a pantalla completa con la banda arriba y el texto abajo dejaba medio
+   viewport vacío entre los dos. */
+@media (max-aspect-ratio: 1 / 1) {
+  .seq:not(.hero).is-static .seq__pin {
+    aspect-ratio: auto;
+    padding: 5.5rem 0 clamp(2.5rem, 6vh, 4rem);
+  }
+  .seq:not(.hero).is-static .seq__still {
+    position: static;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    object-position: 50% 50%;
+  }
+  .seq:not(.hero).is-static .seq__ui {
+    position: static;
+    transform: none;
+    margin-top: 1.75rem;
+    padding-inline: var(--content-inset) var(--content-edge);
+  }
+  .seq:not(.hero).is-static .seq__pin::after { display: none; }
+}
 
 /* ── HUD de depuración (?debug=1) ───────────────────────────── */
 .hud {
@@ -150,9 +229,9 @@
   right: 12px;
   top: 12px;
   z-index: 200;
-  background: rgba(11, 11, 13, 0.86);
-  border: 1px solid rgba(232, 228, 220, 0.28);
-  color: #C6C3BE;
+  background: rgba(21, 19, 21, 0.88);
+  border: 1px solid rgba(241, 234, 224, 0.28);
+  color: #D8D2C8;
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 11px;
   line-height: 1.5;

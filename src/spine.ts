@@ -1,47 +1,34 @@
 /**
- * La espina: una única línea de acero a la izquierda que recorre toda la página
- * sin cortarse. Es el cambrillón — la lámina que sostiene el zapato — y por eso
- * no se rompe en ningún momento. El tramo lleno marca el avance de lectura, las
- * marcas son las secciones y la etiqueta nombra dónde estás.
- *
- * Además decide el color del cromo fijo (barra y espina). `.topbar` y `.spine`
- * viven fuera de las secciones, así que `.on-paper` no las alcanza: si no se
- * invierten a mano, la barra se queda negra sobre marfil y el logotipo se pierde.
+ * La espina: una única línea a la izquierda que recorre toda la página sin
+ * cortarse. Es el filo de la suela —el rojo lacado que asoma a cada paso— y por
+ * eso es lo único de la página, aparte del zapato, que lleva ese color. El tramo
+ * lleno marca el avance de lectura, las marcas son las secciones y la etiqueta
+ * nombra dónde estás.
  *
  * Las posiciones se cachean y solo se recalculan al redimensionar. Leer
  * offsetTop/scrollHeight en cada frame de scroll fuerza un recálculo de
  * layout por frame (forced reflow) y dispara el Total Blocking Time.
  */
-/** Los tres suelos de la página. El cromo fijo tiene que seguirlos. */
-type Ground = 'paper' | 'set' | 'dark'
-
 interface SectionSpec {
   id: string
   name: string
-  ground: Ground
 }
 
 const SECTIONS: SectionSpec[] = [
-  { id: 'manifiesto', name: 'Manifiesto', ground: 'paper' },
-  { id: 'plano', name: 'El plano', ground: 'paper' },
-  { id: 'atelier', name: 'Atelier', ground: 'paper' },
-  { id: 'anatomia', name: 'Anatomía', ground: 'set' },
-  { id: 'ficha', name: 'Ficha técnica', ground: 'paper' },
-  { id: 'casa', name: 'La casa', ground: 'paper' },
-  { id: 'coleccion', name: 'La colección', ground: 'paper' },
-  { id: 'cita', name: 'Solicitar un par', ground: 'dark' },
+  { id: 'manifiesto', name: 'Manifiesto' },
+  { id: 'paso', name: 'El paso' },
+  { id: 'plano', name: 'El plano' },
+  { id: 'atelier', name: 'Atelier' },
+  { id: 'anatomia', name: 'Anatomía' },
+  { id: 'detalle', name: 'La punta' },
+  { id: 'ficha', name: 'Ficha técnica' },
+  { id: 'casa', name: 'La casa' },
+  { id: 'coleccion', name: 'La colección' },
+  { id: 'cita', name: 'Solicitar un par' },
 ]
 
-/** Antes de la primera sección estás en el hero, que es el escenario. */
+/** Antes de la primera sección estás en el hero. */
 const HOME_LABEL = 'París'
-const HOME_GROUND: Ground = 'set'
-
-/**
- * A qué altura se pregunta "¿qué hay debajo de la barra?". Es el alto de la
- * barra: lo que decide el color del cromo es lo que pasa por detrás de ella,
- * no lo que hay en mitad del viewport.
- */
-const CHROME_PROBE = 64
 
 export function initSpine(): void {
   const spine = document.querySelector<HTMLElement>('.spine')
@@ -86,20 +73,11 @@ export function initSpine(): void {
 
   let ticking = false
   let currentName = ''
-  let currentGround: Ground | null = null
 
   const render = (): void => {
     ticking = false
     const y = window.scrollY
     fill.style.height = `${Math.min(100, Math.max(0, (y / maxScroll) * 100)).toFixed(2)}%`
-
-    // Qué sección pasa por detrás de la barra: decide el color del cromo.
-    let ground: Ground = HOME_GROUND
-    for (const s of tops) if (s.top <= y + CHROME_PROBE) ground = s.spec.ground
-    if (ground !== currentGround) {
-      currentGround = ground
-      document.documentElement.dataset.chrome = ground
-    }
 
     if (!label) return
     // La etiqueta mira al centro del viewport, no a la barra: nombra lo que

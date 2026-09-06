@@ -16,17 +16,28 @@ import { initForm } from './form'
 import { initSpine } from './spine'
 import { initNav } from './nav'
 import { initPlan } from './plan'
+import { initDetail } from './detail'
 
 const sequences: ScrollSequence[] = []
 const landscape = window.matchMedia('(min-aspect-ratio: 1/1)')
 
-/** Enciende el hito del despiece que corresponde al progreso. */
+/**
+ * Enciende el hito que corresponde al progreso.
+ *
+ * Por defecto los hitos se reparten el recorrido a partes iguales. Si alguno
+ * lleva `data-from` (fracción 0-1 en la que entra), manda eso: el hero lo usa
+ * para que las notas laterales no aparezcan hasta que el texto se ha retirado.
+ * Antes del primer `data-from` no hay ninguno encendido.
+ */
 function bindBeats(section: HTMLElement): (p: number) => void {
   const beats = Array.from(section.querySelectorAll<HTMLElement>('.beat'))
   if (!beats.length) return () => {}
-  let active = -1
+  const timed = beats.some((b) => b.dataset.from !== undefined)
+  const from = beats.map((b, n) => timed ? Number(b.dataset.from ?? 0) : n / beats.length)
+  let active = -2
   return (p: number) => {
-    const i = Math.min(beats.length - 1, Math.floor(p * beats.length))
+    let i = -1
+    for (let n = 0; n < from.length; n++) if (p >= from[n]) i = n
     if (i === active) return
     active = i
     beats.forEach((b, n) => b.classList.toggle('is-on', n === i))
@@ -47,6 +58,7 @@ function initSequences(): void {
       eager: isHero,
       focusLandscape: Number(section.dataset.focus) || undefined,
       focusX: Number(section.dataset.focusX) || undefined,
+      fill: section.dataset.fill === 'cover' ? 'cover' : 'subject',
       onProgress: (p) => {
         beats(p)
         // En apaisado el texto se retira entre el 15% y el 45% del giro y deja
@@ -86,6 +98,7 @@ initNav()
 initSpine()
 initReveal()
 initPlan()
+initDetail()
 initForm()
 initSequences()
 initHud()

@@ -18,7 +18,7 @@
  */
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { mkdir, rm, readdir, stat, writeFile } from 'node:fs/promises'
+import { mkdir, rm, readdir, stat, writeFile, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
@@ -29,12 +29,21 @@ const TMP = path.join(ROOT, '.tmp-frames')
 const OUT_ROOT = path.join(ROOT, 'public', 'frames')
 const MANIFEST = path.join(ROOT, 'src', 'frames.manifest.json')
 
-/** Secuencias del proyecto. `pnpm frames` construye estas dos. */
+/**
+ * Secuencias del proyecto. `pnpm frames` construye las tres; `pnpm frames
+ * --only rotate` solo una (útil mientras van llegando los clips de uno en uno).
+ *
+ * `fallbackAt`: instante (0-1) del clip del que sale la imagen de respaldo.
+ * `tight`: si el build cierra el encuadre sobre el producto. En el paso NO: el
+ * sujeto recorre el encuadre entero y la caja medida es el ancho completo, así
+ * que recortar no aporta nada y el runtime lo pinta a cover.
+ */
 const SEQUENCES = [
   // 160 y no 100: el giro completo son 360°, así que con 100 fotogramas el salto
   // entre uno y otro es de 3,6° y el ojo lo lee como escalón. Con 160 baja a 2,25°.
-  { name: 'rotate', input: 'assets/source/product-rotate.mp4', frames: 160 },
-  { name: 'explode', input: 'assets/source/product-explode.mp4', frames: 120 },
+  { name: 'rotate', input: 'assets/source/product-rotate.mp4', frames: 160, fallbackAt: 0.05, tight: true },
+  { name: 'walk', input: 'assets/source/product-walk.mp4', frames: 160, fallbackAt: 0.5, tight: false },
+  { name: 'explode', input: 'assets/source/product-explode.mp4', frames: 120, fallbackAt: 1, tight: true },
 ]
 
 /**
@@ -61,6 +70,7 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--all') out.all = true
+    else if (a === '--only') { out.all = true; out.only = argv[++i] }
     else if (a.startsWith('--')) out[a.slice(2)] = argv[++i]
   }
   return out
@@ -288,8 +298,12 @@ async function encodeWebp(pngs, outDir, quality) {
  */
 const IMG_DIR = path.join(ROOT, 'public', 'img')
 
+/** Dimensiones de cada still emitido, para sincronizarlas con el HTML. */
+const EMITTED = new Map()
+
 /** Un frame del vídeo -> WebP recortado y escalado. */
 async function still(input, { at, crop, width, height, quality, out }) {
+  EMITTED.set(out, { width, height })
   await mkdir(IMG_DIR, { recursive: true })
   const png = path.join(TMP, `still-${path.basename(out, '.webp')}.png`)
   await mkdir(TMP, { recursive: true })
@@ -327,7 +341,7 @@ const REF = path.join(ROOT, 'assets', 'source', 'product-ref.png')
 const CRAFT_SHOTS = [
   { out: 'craft-montado.webp',    at: 0.18, yAt: 0.45, zoom: 1.05, custom: 'atelier-montado' },
   { out: 'craft-cambrillon.webp', at: 0.52, yAt: 0.74, zoom: 0.62, custom: 'atelier-cambrillon' },
-  { out: 'craft-canto.webp',      at: 0.78, yAt: 0.86, zoom: 0.55, custom: 'atelier-canto' },
+  { out: 'craft-laca.webp',       at: 0.78, yAt: 0.86, zoom: 0.55, custom: 'atelier-laca' },
 ]
 const CRAFT_W = 720
 const CRAFT_H = 900
@@ -357,7 +371,7 @@ async function emitHeroPoster(seq, crops, desktop, mobile) {
 
 async function emitPageImages() {
   if (!existsSync(REF)) {
-    console.log('   (sin sneaker-ref.png: el póster y el atelier se derivan de los clips)')
+    console.log('   (sin product-ref.png: el póster y el atelier se derivan de los clips)')
     return null
   }
   const { stdout } = await run('ffprobe', ['-v', 'error', '-select_streams', 'v:0',
@@ -403,7 +417,8 @@ async function emitPageImages() {
 
 /** Imagen de respaldo de cada secuencia, para reduce-motion o fallo de carga. */
 async function emitFallback(seq, meta, crop) {
-  const at = seq.name === 'explode' ? Math.max(0, meta.duration - 0.3) : 0.05
+  const frac = seq.fallbackAt ?? 0.05
+  const at = frac >= 1 ? Math.max(0, meta.duration - 0.3) : frac * meta.duration
   // Mismo recorte que el juego de escritorio, y la proporción sale de ahí: un
   // 1440x810 escrito a mano aplastaría cualquier encuadre que no fuese 16:9.
   const srcW = crop ? crop.width : meta.width
@@ -490,10 +505,14 @@ async function buildSequence(seq) {
 
   const subject = await measureSubject(seq.inputAbs)
   const background = await measureBackground(seq.inputAbs)
-  const crops = {
-    desktop: pickCrop(subject, meta.width, meta.height, RATIOS.desktop),
-    mobile: pickCrop(subject, meta.width, meta.height, RATIOS.mobile),
-  }
+  const tight = seq.tight ?? true
+  const full = { label: 'completo', width: meta.width, height: meta.height, x: 0, y: 0, ratio: meta.width / meta.height, fill: subject.x1 - subject.x0 }
+  const crops = tight
+    ? {
+        desktop: pickCrop(subject, meta.width, meta.height, RATIOS.desktop),
+        mobile: pickCrop(subject, meta.width, meta.height, RATIOS.mobile),
+      }
+    : { desktop: full, mobile: full }
   const fillIn = Math.round((subject.x1 - subject.x0) * 100)
   console.log(
     `   producto en x ${Math.round(subject.x0 * meta.width)}..${Math.round(subject.x1 * meta.width)} ` +
@@ -508,7 +527,7 @@ async function buildSequence(seq) {
   // El encuadre es lo más barato que hay: cerrarlo sube la resolución efectiva
   // sobre el producto sin un solo byte más. Por debajo del 70% es que el clip
   // se generó con el zapato pequeño en cuadro.
-  if (crops.desktop.fill < 0.7) {
+  if (tight && crops.desktop.fill < 0.7) {
     console.log(
       `   ⚠︎ el producto solo llena el ${Math.round(crops.desktop.fill * 100)}% del recorte de ` +
       `escritorio. Regenera el clip con el zapato al 85% del ancho: es resolución gratis.`
@@ -536,11 +555,42 @@ async function buildSequence(seq) {
   return { frames: desktop.count, background, desktop, mobile }
 }
 
+/**
+ * Reescribe los `width`/`height` del HTML de cada imagen que acaba de emitir.
+ *
+ * Esos atributos reservan el espacio antes de que llegue la imagen; si mienten
+ * sobre la proporción, el navegador reserva una caja de otra forma y todo salta
+ * al cargar. Se escribían a mano y se quedaban viejos en cuanto cambiaba el
+ * recorte. `pnpm verify` lo comprueba; esto evita que llegue a fallar.
+ */
+async function syncHtmlDimensions() {
+  const html = path.join(ROOT, 'index.html')
+  let src = await readFile(html, 'utf8')
+  let changed = 0
+  for (const [out, { width, height }] of EMITTED) {
+    // <img src="/img/x.webp" … width="…" height="…"> y <source srcset="/img/x.webp" …>
+    const re = new RegExp(`(<(?:img|source)\\b[^>]*?(?:src|srcset)="/img/${out}"[^>]*?)width="\\d+"(\\s+)height="\\d+"`, 'g')
+    src = src.replace(re, (m, head, gap) => {
+      if (m.includes(`width="${width}"`) && m.includes(`height="${height}"`)) return m
+      changed++
+      return `${head}width="${width}"${gap}height="${height}"`
+    })
+  }
+  if (changed) {
+    await writeFile(html, src)
+    console.log(`\n✓ index.html: ${changed} width/height actualizados`)
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const list = args.all
-    ? SEQUENCES
+    ? SEQUENCES.filter((s) => !args.only || s.name === args.only)
     : [{ name: args.name, input: args.input, frames: Number(args.frames) || 100 }]
+  if (args.only && !list.length) {
+    console.error(`--only ${args.only}: no existe. Secuencias: ${SEQUENCES.map((s) => s.name).join(', ')}`)
+    process.exit(1)
+  }
 
   if (!args.all && (!args.name || !args.input)) {
     console.error('Uso: --input <vídeo> --name <secuencia> --frames <n>   |   --all')
@@ -552,11 +602,14 @@ async function main() {
     : {}
 
   const pageImages = await emitPageImages()
+  // Cada secuencia construida sustituye entera su entrada del manifest, y con
+  // ella la marca `placeholder` que deja el material provisional.
   for (const seq of list) manifest[seq.name] = await buildSequence(seq)
   if (pageImages) manifest.images = pageImages
 
   await mkdir(path.dirname(MANIFEST), { recursive: true })
   await writeFile(MANIFEST, JSON.stringify(manifest, null, 2) + '\n')
+  await syncHtmlDimensions()
   await rm(TMP, { recursive: true, force: true })
 
   console.log('\n── Resumen ──')

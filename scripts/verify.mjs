@@ -30,7 +30,9 @@ const urlArg = args.indexOf('--url')
 const URL = urlArg >= 0 ? args[urlArg + 1] : DEFAULT_URL
 
 let failures = 0
+let provisional = 0
 const ok = (msg) => console.log(`  \x1b[32m✓\x1b[0m ${msg}`)
+const warn = (msg) => { provisional++; console.log(`  \x1b[33m⚠︎\x1b[0m ${msg}`) }
 const bad = (msg) => { failures++; console.log(`  \x1b[31m✗\x1b[0m ${msg}`) }
 const head = (msg) => console.log(`\n\x1b[1m${msg}\x1b[0m`)
 
@@ -132,6 +134,14 @@ async function checkSequences(page, label) {
 
   for (const id of ids) {
     const name = await page.evaluate((i) => document.getElementById(i).dataset.seq, id)
+    // Material provisional (frames: 0 en el manifest): la sección es estática a
+    // propósito y no hay animación que medir. Se avisa, no se falla: la web tiene
+    // que poder revisarse antes de que existan los clips.
+    const state = await page.evaluate((n) => window.__seq().find((s) => s.name === n), name)
+    if (state?.placeholder) {
+      warn(`${label} · ${id}: MATERIAL PROVISIONAL — sin fotogramas, sección estática (falta el clip "${name}")`)
+      continue
+    }
     // Entrar EN la sección, no justo antes: el hero empieza en 0 y un
     // scrollTo(0) no dispara evento de scroll, así que su fase fina —que espera
     // al primer scroll a propósito— no arrancaría nunca y el test se colgaría
@@ -274,7 +284,7 @@ async function runViewport(browser, vp) {
   else bad(`${vp.name} · ${framesBeforeLoad.length} fotogramas descargados antes de load — compiten con el LCP`)
 
   // Tras load y antes de que nadie toque el scroll, solo el hero tiene permiso,
-  // y solo su pasada gruesa (1 de cada 4). Es lo primero que se ve: esperar al
+  // y solo su pasada gruesa (1 de cada COARSE_STEP). Es lo primero que se ve: esperar al
   // scroll dejaría el hero congelado. Cualquier otra secuencia aquí es un fallo.
   const early = framesBeforeScroll.filter((u) => !u.includes('/frames/rotate/'))
   if (!early.length) ok(`${vp.name} · antes del scroll solo carga el hero (${framesBeforeScroll.length} fotogramas, pasada gruesa)`)
@@ -282,7 +292,7 @@ async function runViewport(browser, vp) {
 
   const coarseCap = await page.evaluate(() => {
     const s = window.__seq().find((x) => x.name === 'rotate')
-    return s ? Math.ceil(s.count / 4) + 4 : 40
+    return s && s.count ? Math.ceil(s.count / (s.coarseStep || 8)) + 4 : 0
   })
   if (framesBeforeScroll.length <= coarseCap) ok(`${vp.name} · la pasada gruesa se queda en ${framesBeforeScroll.length} (tope ${coarseCap})`)
   else bad(`${vp.name} · ${framesBeforeScroll.length} fotogramas antes del scroll, por encima de la pasada gruesa (${coarseCap})`)
@@ -330,6 +340,17 @@ async function runViewport(browser, vp) {
   if (!broken.length) ok(`${vp.name} · las ${await page.evaluate(() => document.images.length)} imágenes cargan`)
   else bad(`${vp.name} · ${broken.length} imágenes rotas: ${broken.join(', ')}`)
 
+  // Los atributos width/height reservan el espacio antes de que llegue la
+  // imagen. Si mienten sobre la proporción, el navegador reserva una caja de
+  // otra forma y todo salta al cargar (CLS). Se compara con la imagen real.
+  const misdeclared = await page.evaluate(() =>
+    [...document.querySelectorAll('img[width][height]')]
+      .filter((i) => i.naturalWidth > 0)
+      .filter((i) => Math.abs((Number(i.getAttribute('width')) / Number(i.getAttribute('height'))) - (i.naturalWidth / i.naturalHeight)) > 0.02)
+      .map((i) => `${new URL(i.currentSrc || i.src).pathname} declara ${i.getAttribute('width')}×${i.getAttribute('height')} y mide ${i.naturalWidth}×${i.naturalHeight}`))
+  if (!misdeclared.length) ok(`${vp.name} · los width/height declarados coinciden con las imágenes`)
+  else bad(`${vp.name} · proporción mal declarada: ${misdeclared.join(' | ')}`)
+
   if (!errors.length) ok(`${vp.name} · cero errores de consola`)
   else bad(`${vp.name} · ${errors.length} errores de consola: ${errors.slice(0, 3).join(' | ')}`)
 
@@ -356,6 +377,8 @@ async function runReducedMotion(browser) {
 
   const states = await page.evaluate(() => window.__seq())
   const animated = states.filter((s) => !s.static)
+  const placeholders = states.filter((s) => s.placeholder)
+  if (placeholders.length) warn(`${placeholders.length} secuencia(s) con material provisional: ${placeholders.map((s) => s.name).join(', ')}`)
   if (!animated.length) ok(`las ${states.length} secuencias pasan a estática`)
   else bad(`${animated.length} secuencias siguen animadas: ${animated.map((s) => s.name).join(', ')}`)
 
@@ -383,6 +406,10 @@ try {
 }
 
 console.log()
+if (provisional) {
+  console.log(`\x1b[33m⚠︎ ${provisional} aviso(s) de material provisional\x1b[0m: la web se revisa con las fotos de referencia.`)
+  console.log('  Genera los clips (assets/source/PROMPTS.md) y lanza `pnpm frames`; entonces se verifica la animación.')
+}
 if (failures) {
   console.log(`\x1b[31m✗ ${failures} comprobación(es) fallida(s)\x1b[0m`)
   console.log('  Falta Lighthouse: ejecútalo DOS veces en móvil y escritorio.')

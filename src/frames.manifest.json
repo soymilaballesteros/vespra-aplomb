@@ -1,76 +1,23 @@
 {
-  "explode": {
-    "frames": 120,
-    "background": "#050506",
-    "desktop": {
-      "count": 120,
-      "width": 1308,
-      "height": 980,
-      "quality": 82,
-      "bytes": 5628140,
-      "avg": 46901.166666666664,
-      "max": 52306,
-      "subject": {
-        "x0": 0.11391437308868502,
-        "x1": 0.886085626911315,
-        "y0": 0.061224489795918366,
-        "y1": 0.9387755102040817
-      }
-    },
-    "mobile": {
-      "count": 120,
-      "width": 960,
-      "height": 768,
-      "quality": 76,
-      "bytes": 2900980,
-      "avg": 24174.833333333332,
-      "max": 27456,
-      "subject": {
-        "x0": 0.08809135399673736,
-        "x1": 0.9119086460032626,
-        "y0": 0.061224489795918366,
-        "y1": 0.9387755102040817
-      }
-    }
-  },
-  "images": {
-    "craft": {
-      "width": 720,
-      "height": 900
-    }
-  },
   "rotate": {
-    "frames": 160,
-    "background": "#050506",
-    "desktop": {
-      "count": 160,
-      "width": 1390,
-      "height": 782,
-      "quality": 82,
-      "bytes": 5305636,
-      "avg": 33160.225,
-      "max": 42436,
-      "subject": {
-        "x0": 0.06115107913669065,
-        "x1": 0.9388489208633094,
-        "y0": 0.13554987212276215,
-        "y1": 0.8644501278772379
-      }
-    },
-    "mobile": {
-      "count": 160,
-      "width": 960,
-      "height": 540,
-      "quality": 76,
-      "bytes": 2326246,
-      "avg": 14539.0375,
-      "max": 18198,
-      "subject": {
-        "x0": 0.06115107913669065,
-        "x1": 0.9388489208633094,
-        "y0": 0.13554987212276215,
-        "y1": 0.8644501278772379
-      }
-    }
+    "frames": 0,
+    "placeholder": true,
+    "background": "#F1EAE0",
+    "desktop": { "count": 0, "width": 1920, "height": 1080 },
+    "mobile": { "count": 0, "width": 960, "height": 960 }
+  },
+  "walk": {
+    "frames": 0,
+    "placeholder": true,
+    "background": "#F1EAE0",
+    "desktop": { "count": 0, "width": 1920, "height": 1080 },
+    "mobile": { "count": 0, "width": 960, "height": 540 }
+  },
+  "explode": {
+    "frames": 0,
+    "placeholder": true,
+    "background": "#F1EAE0",
+    "desktop": { "count": 0, "width": 1920, "height": 1080 },
+    "mobile": { "count": 0, "width": 960, "height": 960 }
   }
 }
