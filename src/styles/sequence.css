@@ -65,7 +65,7 @@
   font-size: 0.625rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--ash);
+  color: var(--fg-2);
   margin-bottom: 0.3rem;
 }
 .seq__facts dd { margin: 0; font-family: var(--display); font-size: 1.35rem; }
@@ -78,7 +78,7 @@
   font-size: 0.625rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--ash);
+  color: var(--fg-2);
   transition: opacity 0.6s var(--ease);
 }
 .seq.is-scrubbing .seq__hint { opacity: 0; }
@@ -100,9 +100,9 @@
   opacity: 0.28;
   transition: opacity 0.55s var(--ease), border-color 0.55s var(--ease);
 }
-.beat.is-on { opacity: 1; border-left-color: var(--champagne); }
+.beat.is-on { opacity: 1; border-left-color: var(--accent); }
 .beat h3 { font-family: var(--display); font-weight: 500; font-size: clamp(1.35rem, 3vw, 2.1rem); line-height: 1.1; }
-.beat p { font-size: 0.9rem; color: var(--ash); max-width: 34ch; }
+.beat p { font-size: 0.9rem; color: var(--fg-2); max-width: 34ch; }
 @media (prefers-reduced-motion: reduce) { .beat { opacity: 1; } }
 
 /* ── Pantallas verticales ────────────────────────────────────
@@ -147,7 +147,7 @@
   z-index: 200;
   background: rgba(0, 0, 0, 0.82);
   border: 1px solid var(--rule-strong);
-  color: var(--champagne);
+  color: #AEB2B4;
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 11px;
   line-height: 1.5;

@@ -31,8 +31,8 @@ const MANIFEST = path.join(ROOT, 'src', 'frames.manifest.json')
 
 /** Secuencias del proyecto. `pnpm frames` construye estas dos. */
 const SEQUENCES = [
-  { name: 'rotate', input: 'assets/source/sneaker-rotate.mp4', frames: 100 },
-  { name: 'explode', input: 'assets/source/sneaker-explode.mp4', frames: 120 },
+  { name: 'rotate', input: 'assets/source/product-rotate.mp4', frames: 100 },
+  { name: 'explode', input: 'assets/source/product-explode.mp4', frames: 120 },
 ]
 
 /** Presupuesto DURO por secuencia y juego. */
@@ -216,12 +216,12 @@ async function still(input, { at, crop, width, height, quality, out }) {
 
 /**
  * Imágenes de página: póster del hero y los tres retratos del atelier.
- * Salen de `assets/source/sneaker-ref.png` (4K) si existe, porque tiene mucha
+ * Salen de `assets/source/product-ref.png` (4K) si existe, porque tiene mucha
  * más resolución que un fotograma de vídeo; si no, del propio clip.
  * Los recortes se calculan sobre la caja medida del producto, nunca sobre el
  * centro del encuadre: la IA no centra el producto de forma fiable.
  */
-const REF = path.join(ROOT, 'assets', 'source', 'sneaker-ref.png')
+const REF = path.join(ROOT, 'assets', 'source', 'product-ref.png')
 
 /**
  * Tres macros del producto. `at`/`yAt` los sitúan sobre la pieza y `zoom` fija
@@ -230,9 +230,9 @@ const REF = path.join(ROOT, 'assets', 'source', 'sneaker-ref.png')
  * una sola foto cortada en tiras.
  */
 const CRAFT_SHOTS = [
-  { out: 'craft-curtido.webp', at: 0.45, yAt: 0.40, zoom: 0.78, custom: 'atelier-curtido' },
-  { out: 'craft-montado.webp', at: 0.13, yAt: 0.52, zoom: 1.15, custom: 'atelier-montado' },
-  { out: 'craft-patina.webp', at: 0.86, yAt: 0.58, zoom: 0.90, custom: 'atelier-patina' },
+  { out: 'craft-montado.webp',    at: 0.18, yAt: 0.45, zoom: 1.05, custom: 'atelier-montado' },
+  { out: 'craft-cambrillon.webp', at: 0.52, yAt: 0.74, zoom: 0.62, custom: 'atelier-cambrillon' },
+  { out: 'craft-forrado.webp',    at: 0.78, yAt: 0.38, zoom: 0.85, custom: 'atelier-forrado' },
 ]
 const CRAFT_W = 720
 const CRAFT_H = 900
@@ -270,7 +270,7 @@ async function emitPageImages() {
   const subject = await measureSubject(REF)
   const crop = pickMobileCrop(subject, w, h)
 
-  console.log(`\n▸ imágenes de página  ←  assets/source/sneaker-ref.png (${w}x${h})`)
+  console.log(`\n▸ imágenes de página  ←  assets/source/product-ref.png (${w}x${h})`)
   console.log(
     `   producto en x ${Math.round(subject.x0 * w)}..${Math.round(subject.x1 * w)} ` +
     `· póster ${crop.label} desde x=${crop.x}`
@@ -312,8 +312,12 @@ async function emitPageImages() {
 /** Imagen de respaldo de cada secuencia, para reduce-motion o fallo de carga. */
 async function emitFallback(seq, meta) {
   const at = seq.name === 'explode' ? Math.max(0, meta.duration - 0.3) : 0.05
+  // La proporción sale del clip, no de un 16:9 escrito a mano: si algún día una
+  // secuencia se genera en otro formato, un 1440x810 fijo la aplastaría.
+  const width = Math.min(1440, meta.width)
+  const height = Math.round((width * meta.height) / meta.width / 2) * 2
   await still(seq.inputAbs, {
-    at, crop: 'crop=iw:ih', width: 1440, height: 810, quality: 72,
+    at, crop: 'crop=iw:ih', width, height, quality: 72,
     out: `fallback-${seq.name}.webp`,
   })
 }
@@ -336,7 +340,13 @@ async function buildVariant(seq, variant, meta, crop, subject) {
   const tmpDir = path.join(TMP, seq.name, variant)
   const outDir = path.join(OUT_ROOT, seq.name, variant)
 
-  for (const width of budget.widths) {
+  // Nunca escalar hacia arriba: pedir 1440 px a un clip de 1080 gasta bytes en
+  // píxeles inventados y no aporta un solo detalle. El tope es el ancho REAL de
+  // lo que va a entrar en ffmpeg — el del recorte si hay recorte, y si no el del clip.
+  const srcW = crop ? crop.width : meta.width
+  const widths = [...new Set(budget.widths.map((w) => Math.min(w, srcW)))]
+
+  for (const width of widths) {
     const pngs = await extractPngs(seq.inputAbs, tmpDir, {
       variant, width, count: seq.frames, duration: meta.duration, crop,
     })
@@ -369,7 +379,7 @@ async function buildVariant(seq, variant, meta, crop, subject) {
   await rm(tmpDir, { recursive: true, force: true })
   throw new Error(
     `[${seq.name}/${variant}] IMPOSIBLE cumplir el presupuesto de ${MB(budget.bytes)} MB ` +
-    `ni con calidad ${QUALITIES.at(-1)} a ${budget.widths.at(-1)}px.`
+    `ni con calidad ${QUALITIES.at(-1)} a ${widths.at(-1)}px.`
   )
 }
 

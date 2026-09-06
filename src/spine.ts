@@ -1,56 +1,111 @@
 /**
- * La espina: una única línea continua a la izquierda cuyo tramo champán
- * marca el avance de lectura, y que nombra la sección en la que estás.
+ * La espina: una única línea de acero a la izquierda que recorre toda la página
+ * sin cortarse. Es el cambrillón — la lámina que sostiene el zapato — y por eso
+ * no se rompe en ningún momento. El tramo lleno marca el avance de lectura, las
+ * marcas son las secciones y la etiqueta nombra dónde estás.
+ *
+ * Además decide el color del cromo fijo (barra y espina). `.topbar` y `.spine`
+ * viven fuera de las secciones, así que `.on-paper` no las alcanza: si no se
+ * invierten a mano, la barra se queda negra sobre marfil y el logotipo se pierde.
  *
  * Las posiciones se cachean y solo se recalculan al redimensionar. Leer
  * offsetTop/scrollHeight en cada frame de scroll fuerza un recálculo de
  * layout por frame (forced reflow) y dispara el Total Blocking Time.
  */
-const SECTION_NAMES: Array<[string, string]> = [
-  ['manifiesto', 'Manifiesto'],
-  ['atelier', 'Atelier'],
-  ['anatomia', 'Anatomía'],
-  ['ficha', 'Ficha técnica'],
-  ['heritage', 'Heritage'],
-  ['coleccion', 'Colección'],
-  ['cita', 'Solicitar un par'],
+interface SectionSpec {
+  id: string
+  name: string
+  /** Suelo de marfil: obliga a invertir la barra y la espina al pasar por debajo. */
+  paper?: boolean
+}
+
+const SECTIONS: SectionSpec[] = [
+  { id: 'manifiesto', name: 'Manifiesto', paper: true },
+  { id: 'plano', name: 'El plano', paper: true },
+  { id: 'atelier', name: 'Atelier' },
+  { id: 'anatomia', name: 'Anatomía' },
+  { id: 'ficha', name: 'Ficha técnica', paper: true },
+  { id: 'casa', name: 'La casa', paper: true },
+  { id: 'coleccion', name: 'La colección', paper: true },
+  { id: 'cita', name: 'Solicitar un par' },
 ]
 
+/** Antes de la primera sección estás en el hero. */
+const HOME_LABEL = 'París'
+
+/**
+ * A qué altura se pregunta "¿qué hay debajo de la barra?". Es el alto de la
+ * barra: lo que decide el color del cromo es lo que pasa por detrás de ella,
+ * no lo que hay en mitad del viewport.
+ */
+const CHROME_PROBE = 64
+
 export function initSpine(): void {
+  const spine = document.querySelector<HTMLElement>('.spine')
   const fill = document.querySelector<HTMLElement>('#spineFill')
   const label = document.querySelector<HTMLElement>('#spineLabel')
   if (!fill) return
 
-  const elements = SECTION_NAMES
-    .map(([id, name]) => {
-      const el = document.getElementById(id)
-      return el ? { el, name } : null
+  const elements = SECTIONS
+    .map((spec) => {
+      const el = document.getElementById(spec.id)
+      return el ? { el, spec } : null
     })
-    .filter((s): s is { el: HTMLElement; name: string } => s !== null)
+    .filter((s): s is { el: HTMLElement; spec: SectionSpec } => s !== null)
 
-  let tops: Array<{ top: number; name: string }> = []
+  let tops: Array<{ top: number; spec: SectionSpec }> = []
   let maxScroll = 1
+  let ticks: HTMLElement[] = []
+
+  if (spine) {
+    ticks = elements.map(() => {
+      const tick = document.createElement('i')
+      tick.className = 'spine__tick'
+      spine.append(tick)
+      return tick
+    })
+  }
 
   /** Única función que toca el layout. Se llama al cargar y al redimensionar. */
   const measure = (): void => {
     maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
-    tops = elements.map((s) => ({ top: s.el.getBoundingClientRect().top + window.scrollY, name: s.name }))
+    tops = elements.map((s) => ({
+      top: s.el.getBoundingClientRect().top + window.scrollY,
+      spec: s.spec,
+    }))
+    // Las marcas cuelgan del mismo cálculo que el relleno, así que caen justo
+    // donde el tramo lleno cruza cada sección.
+    tops.forEach((s, i) => {
+      const tick = ticks[i]
+      if (tick) tick.style.top = `${Math.min(100, Math.max(0, (s.top / maxScroll) * 100)).toFixed(2)}%`
+    })
   }
 
   let ticking = false
-  let current = ''
+  let currentName = ''
+  let currentPaper: boolean | null = null
 
   const render = (): void => {
     ticking = false
     const y = window.scrollY
     fill.style.height = `${Math.min(100, Math.max(0, (y / maxScroll) * 100)).toFixed(2)}%`
 
+    // Qué sección pasa por detrás de la barra: decide el color del cromo.
+    let paper = false
+    for (const s of tops) if (s.top <= y + CHROME_PROBE) paper = s.spec.paper === true
+    if (paper !== currentPaper) {
+      currentPaper = paper
+      document.documentElement.classList.toggle('chrome-on-paper', paper)
+    }
+
     if (!label) return
+    // La etiqueta mira al centro del viewport, no a la barra: nombra lo que
+    // estás leyendo, no lo que acaba de entrar.
     const mid = y + window.innerHeight * 0.4
-    let name = 'Florencia'
-    for (const s of tops) if (s.top <= mid) name = s.name
-    if (name !== current) {
-      current = name
+    let name = HOME_LABEL
+    for (const s of tops) if (s.top <= mid) name = s.spec.name
+    if (name !== currentName) {
+      currentName = name
       label.textContent = name
     }
   }

@@ -1,4 +1,7 @@
-import '@fontsource-variable/bodoni-moda/wght.css'
+// `standard` en vez de `wght`: trae también el eje óptico (opsz), que es lo que
+// da el corte de display de la Didone. Cuesta 20 KB más en la latina y es la
+// diferencia entre un titular de casa de costura y un Times estirado.
+import '@fontsource-variable/bodoni-moda/standard.css'
 import '@fontsource-variable/instrument-sans/wght.css'
 import './styles/tokens.css'
 import './styles/base.css'
@@ -8,10 +11,11 @@ import './styles/sequence.css'
 
 import ScrollTrigger from 'gsap/ScrollTrigger'
 import { ScrollSequence } from './scroll-sequence'
-import { initReveal } from './reveal'
+import { initReveal, splitLines } from './reveal'
 import { initForm } from './form'
 import { initSpine } from './spine'
 import { initNav } from './nav'
+import { initPlan } from './plan'
 
 const sequences: ScrollSequence[] = []
 const landscape = window.matchMedia('(min-aspect-ratio: 1/1)')
@@ -41,6 +45,7 @@ function initSequences(): void {
       name,
       lengthVh,
       eager: isHero,
+      focusLandscape: Number(section.dataset.focus) || undefined,
       onProgress: (p) => {
         beats(p)
         // En apaisado el texto se retira entre el 15% y el 45% del giro y deja
@@ -79,6 +84,7 @@ function initHud(): void {
 initNav()
 initSpine()
 initReveal()
+initPlan()
 initForm()
 initSequences()
 initHud()
@@ -98,8 +104,15 @@ function refreshOnce(): void {
     if (--pending > 0) return
     requestAnimationFrame(() => ScrollTrigger.refresh())
   }
-  if (document.fonts) document.fonts.ready.then(done, done)
-  else done()
+  // Partir en líneas cambia las cajas de línea, así que tiene que ocurrir
+  // ANTES de medir los pins — y solo cuando las fuentes ya están, o se partiría
+  // sobre la métrica de la fuente de respaldo y saldrían otras líneas.
+  const afterFonts = (): void => {
+    splitLines()
+    done()
+  }
+  if (document.fonts) document.fonts.ready.then(afterFonts, afterFonts)
+  else afterFonts()
   if (document.readyState === 'complete') done()
   else window.addEventListener('load', done, { once: true })
 }

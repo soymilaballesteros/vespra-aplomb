@@ -14,3 +14,5 @@ assets/source/*.jpg
 # Restos de verificación en navegador
 .playwright-mcp/
 /0*.png
+/*.png
+verify-out/

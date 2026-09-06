@@ -1,16 +1,49 @@
-/* Paleta sacada del propio producto: el fondo del estudio, la luz de borde
-   champán sobre el cuero y el forro de cabritilla color hueso. */
-:root {
-  --ink:        #0B0B0C;
-  --ink-2:      #131316;
-  --bone:       #E8E3D9;
-  --ash:        #7C7970;
-  --champagne:  #C6A664;
-  --rule:       rgba(232, 227, 217, 0.13);
-  --rule-strong:rgba(232, 227, 217, 0.24);
+/* La página tiene dos suelos, no uno.
+   ─ El ESCENARIO es negro cine: hero y anatomía, donde manda el producto.
+   ─ El PAPEL es marfil: manifiesto, plano, ficha, colección y pie, donde manda
+     el texto. Ese salto de luz es lo que separa un tema oscuro de un editorial.
 
+   Los colores crudos viven arriba. Debajo hay una capa semántica (--bg, --fg,
+   --accent…) que es la ÚNICA que usa el resto del CSS: así una sección cambia
+   de suelo poniéndose `.on-paper` y no hay que duplicar una sola regla. */
+:root {
+  /* ── Crudos ─────────────────────────────────────────────── */
+  --ink:      #0A0A0B;   /* escenario */
+  --ink-2:    #141417;
+  --paper:    #EAE6DD;   /* marfil, no blanco: el blanco puro pica sobre el negro */
+  --carbon:   #121214;   /* texto sobre marfil */
+  --bone:     #EDEAE3;   /* texto sobre negro */
+  /* Los dos secundarios van AL LÍMITE de AA a propósito, no por casualidad:
+     con #7A776F y #6C6961 daban 4,42 y 4,40 y Lighthouse los tumbaba. */
+  --ash:      #807D75;   /* secundario sobre negro · 4,8:1 */
+  --slate:    #656257;   /* secundario sobre marfil · 4,8:1 */
+
+  /* El acento cambia con el suelo, y eso es deliberado.
+     Sobre negro es ACERO: el cambrillón, la pieza que sostiene el zapato y que
+     da nombre a la línea vertical de la página.
+     Sobre marfil es BURDEOS: el color solo existe en el mundo impreso.
+     Un burdeos sobre negro daría 3,3:1 de contraste — ilegible en versalitas. */
+  --steel:    #AEB2B4;
+  --wine:     #5E1A22;
+
+  /* ── Semánticos · suelo por defecto: escenario ──────────── */
+  --bg:          var(--ink);
+  --bg-2:        var(--ink-2);
+  --fg:          var(--bone);
+  --fg-2:        var(--ash);
+  --accent:      var(--steel);
+  --rule:        rgba(237, 234, 227, 0.13);
+  --rule-strong: rgba(237, 234, 227, 0.26);
+
+  /* ── Tipografía ─────────────────────────────────────────── */
   --display: 'Bodoni Moda Variable', Didot, 'Bodoni MT', 'Times New Roman', serif;
   --sans:    'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+
+  /* Bodoni es una Didone: su eje óptico decide el grosor de los remates.
+     A tamaño de titular hay que pedirle el corte de display o los finos salen
+     gruesos y la página parece un Times estirado. */
+  --opsz-display: 96;
+  --opsz-text: 16;
 
   --gutter: clamp(1.25rem, 4vw, 3.5rem);
   --spine-min: clamp(1.25rem, 3.2vw, 3rem);
@@ -34,6 +67,23 @@
 
   --pad-section: clamp(5.5rem, 13vh, 11rem);
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* Una sola curva para las apariciones: larga y sin rebote. El rebote es de
+     producto digital; una casa de costura no rebota. */
+  --ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* El suelo de papel. Solo redefine los semánticos: ninguna regla del resto del
+   CSS sabe que esto existe. */
+.on-paper {
+  --bg:          var(--paper);
+  --bg-2:        #E3DED3;
+  --fg:          var(--carbon);
+  --fg-2:        var(--slate);
+  --accent:      var(--wine);
+  --rule:        rgba(18, 18, 20, 0.16);
+  --rule-strong: rgba(18, 18, 20, 0.30);
+  background: var(--bg);
+  color: var(--fg);
 }
 
 /* Sin espina visible no hay nada que esquivar: márgenes simétricos.

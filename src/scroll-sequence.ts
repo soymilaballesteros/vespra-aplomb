@@ -68,6 +68,13 @@ export interface ScrollSequenceOptions {
    * primero que se ve, y esperar dejaría el hero congelado.
    */
   eager?: boolean
+  /**
+   * Dónde cae el centro del producto en pantallas APAISADAS, de 0 (arriba) a
+   * 1 (abajo). Por defecto 0.5. El hero lo sube un poco porque su texto vive
+   * abajo a la izquierda y si no, la entradilla cruza el zapato por el medio.
+   * En pantallas verticales manda siempre 0.38: ahí el texto va debajo.
+   */
+  focusLandscape?: number
   onProgress?: (progress: number) => void
 }
 
@@ -80,6 +87,7 @@ export class ScrollSequence {
   private readonly still: HTMLImageElement | null
   private readonly lengthVh: number
   private readonly eager: boolean
+  private readonly focusLandscape: number
   private readonly onProgress?: (p: number) => void
 
   private meta: SequenceMeta | undefined
@@ -108,6 +116,7 @@ export class ScrollSequence {
     this.section = opts.section
     this.lengthVh = opts.lengthVh
     this.eager = opts.eager ?? false
+    this.focusLandscape = opts.focusLandscape ?? 0.5
     this.onProgress = opts.onProgress
 
     this.pin = this.section.querySelector<HTMLElement>('.seq__pin')!
@@ -322,8 +331,9 @@ export class ScrollSequence {
     const dh = ih * scale
 
     // Encuadra sobre el producto. En pantallas verticales lo sube al 38% de la
-    // altura en vez de centrarlo: abajo va el texto y si no se solapan.
-    const focusY = h > w ? 0.38 : 0.5
+    // altura en vez de centrarlo: abajo va el texto y si no se solapan. En
+    // apaisado lo decide la sección (el hero lo sube; la anatomía lo centra).
+    const focusY = h > w ? 0.38 : this.focusLandscape
     const cx = ((sub.x0 + sub.x1) / 2) * iw * scale
     const cy = ((sub.y0 + sub.y1) / 2) * ih * scale
     const dx = dw >= w ? Math.min(0, Math.max(w - dw, w / 2 - cx)) : (w - dw) / 2
@@ -336,21 +346,33 @@ export class ScrollSequence {
     ctx.drawImage(img, dx, dy, dw, dh)
 
     // El suelo del estudio es algo más claro que el relleno, así que donde
-    // termina la imagen se ve una costura. Se funde con un degradado corto.
+    // termina la imagen se ve una costura. Se funde con un degradado corto —
+    // en los CUATRO cantos, no solo arriba y abajo: cuando el fotograma es más
+    // estrecho que el lienzo (dw < w), las costuras que se ven son las de los
+    // lados. Con un 16:9 a sangre eso no pasaba nunca y por eso no se notaba.
     const FADE = Math.round(Math.min(h, w) * 0.12)
-    if (dy > 0) this.fadeEdge(ctx, w, dy, dy + FADE, FILL)
-    if (dy + dh < h) this.fadeEdge(ctx, w, dy + dh, dy + dh - FADE, FILL)
+    if (dy > 0) this.fadeEdge(ctx, 0, dy, w, FADE, 0, dy, 0, dy + FADE, FILL)
+    if (dy + dh < h) this.fadeEdge(ctx, 0, dy + dh - FADE, w, FADE, 0, dy + dh, 0, dy + dh - FADE, FILL)
+    if (dx > 0) this.fadeEdge(ctx, dx, 0, FADE, h, dx, 0, dx + FADE, 0, FILL)
+    if (dx + dw < w) this.fadeEdge(ctx, dx + dw - FADE, 0, FADE, h, dx + dw, 0, dx + dw - FADE, 0, FILL)
   }
 
-  /** Degradado vertical del color de relleno hacia transparente, sobre el canto. */
+  /**
+   * Degradado del color de relleno hacia transparente sobre un canto.
+   * `rect` es la banda que se pinta; `from`→`to` la dirección del degradado,
+   * que arranca opaco EN la costura y se apaga hacia dentro de la imagen.
+   */
   private fadeEdge(
-    ctx: CanvasRenderingContext2D, w: number, from: number, to: number, color: string
+    ctx: CanvasRenderingContext2D,
+    rx: number, ry: number, rw: number, rh: number,
+    fx: number, fy: number, tx: number, ty: number,
+    color: string
   ): void {
-    const g = ctx.createLinearGradient(0, from, 0, to)
+    const g = ctx.createLinearGradient(fx, fy, tx, ty)
     g.addColorStop(0, color)
     g.addColorStop(1, 'rgba(7, 7, 8, 0)')
     ctx.fillStyle = g
-    ctx.fillRect(0, Math.min(from, to), w, Math.abs(to - from))
+    ctx.fillRect(rx, ry, rw, rh)
   }
 
   private onResize = (): void => {

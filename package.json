@@ -1,5 +1,5 @@
 {
-  "name": "corvane-monolite",
+  "name": "vespra-aplomb",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -8,9 +8,11 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --port 4173",
-    "frames": "node scripts/build-frames.mjs --all"
+    "frames": "node scripts/build-frames.mjs --all",
+    "verify": "node scripts/verify.mjs"
   },
   "devDependencies": {
+    "playwright": "^1.63.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.11"
   },

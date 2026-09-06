@@ -3,28 +3,30 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CORVANE — MONOLITE. Una sola pieza de piel.</title>
-<meta name="description" content="El MONOLITE se corta de una única pieza de becerro curtido durante cuarenta y dos días. Sin costuras. Ciento veinte pares numerados. Florencia, desde 1911." />
-<meta name="theme-color" content="#0B0B0C" />
+<title>VESPRA — APLOMB. Nueve milímetros tocan el suelo.</title>
+<meta name="description" content="El APLOMB apoya todo su peso en una tapa de nueve milímetros, sostenida por una lámina de acero templado que nadie ve. Ciento veinte pares numerados. París, desde 1949." />
+<meta name="theme-color" content="#0A0A0B" />
 <script>document.documentElement.dataset.js="1"</script>
 <link rel="preload" as="image" href="/img/hero-poster.webp"
       media="(min-width: 701px)" fetchpriority="high" />
 <link rel="preload" as="image" href="/img/hero-poster-mobile.webp"
       media="(max-width: 700px)" fetchpriority="high" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230B0B0C'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' fill='%23C6A664' text-anchor='middle'%3EC%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0A0B'/%3E%3Ctext x='16' y='23' font-family='Didot,Georgia,serif' font-size='20' fill='%23AEB2B4' text-anchor='middle'%3EV%3C/text%3E%3C/svg%3E" />
 </head>
 <body>
 
-<!-- ── Espina: una línea continua de arriba abajo. El producto no tiene costuras; la página tampoco. -->
+<!-- ── La espina: el cambrillón de la página. Una sola línea de acero, de arriba
+     abajo, que no se corta en ningún momento — igual que la lámina que sostiene
+     el zapato. Las marcas son las secciones; las coloca spine.ts. -->
 <div class="spine" aria-hidden="true">
   <div class="spine__track"><div class="spine__fill" id="spineFill"></div></div>
-  <span class="spine__label" id="spineLabel">Florencia</span>
+  <span class="spine__label" id="spineLabel">París</span>
 </div>
 
 <header class="topbar">
-  <a class="wordmark" href="#top">Corvane</a>
+  <a class="wordmark" href="#top">Vespra</a>
   <nav class="topnav">
-    <a href="#atelier">Atelier</a>
+    <a href="#plano">El plano</a>
     <a href="#anatomia">Anatomía</a>
     <a href="#coleccion">Colección</a>
     <a class="topnav__cta" href="#cita">Solicitar un par</a>
@@ -33,154 +35,253 @@
 
 <main id="top">
 
-  <!-- 1 ── HERO · la rotación 360° es el fondo, enganchada al scroll -->
-  <section class="hero seq" id="hero" data-seq="rotate" data-length="260">
+  <!-- 1 ── HERO · la rotación 360° es el escenario, enganchada al scroll.
+       Sin animación de entrada en el texto: lo primero que se pinta no se anima. -->
+  <section class="hero seq" id="hero" data-seq="rotate" data-length="260" data-focus="0.44">
     <div class="seq__pin hero__stage">
       <!-- El póster es el elemento LCP: se pinta sin esperar al JavaScript.
            Lleva el MISMO encuadre que los fotogramas de cada juego, y el JS lo
            redibuja en el lienzo con su misma fórmula, así que el relevo no se
            nota. Si los fotogramas no llegaran a cargar, esto es lo que queda. -->
       <picture class="hero__poster">
-        <source media="(max-width: 700px)" srcset="/img/hero-poster-mobile.webp" width="720" height="540" />
+        <source media="(max-width: 700px)" srcset="/img/hero-poster-mobile.webp" width="720" height="720" />
         <img src="/img/hero-poster.webp"
-             alt="El Corvane Monolite de tres cuartos, sobre fondo de estudio gris carbón."
+             alt="El salón Vespra Aplomb de perfil, en piel color hueso, sobre fondo de estudio casi negro."
              width="1440" height="810" fetchpriority="high" decoding="async" />
       </picture>
       <canvas class="seq__canvas" aria-hidden="true"></canvas>
 
       <div class="hero__copy">
-        <h1 class="hero__title">Una sola pieza<br />de piel.</h1>
+        <h1 class="hero__title">Nueve milímetros<br />tocan el suelo.</h1>
         <p class="lede">
-          El upper del <em>Monolite</em> se corta de una única pieza de becerro.
-          Sin costuras que lo dividan. Sin logotipo que lo explique.
+          Todo el peso del cuerpo pasa por la tapa del <em>Aplomb</em>:
+          nueve milímetros de diámetro. Lo que lo hace posible es una lámina
+          de acero templado escondida en la suela, que nadie verá jamás.
         </p>
         <div class="hero__meta">
-          <span>Monolite</span>
+          <span>Aplomb</span>
           <span class="dot"></span>
-          <span>Florencia, 1911</span>
+          <span>París, 1949</span>
           <span class="dot"></span>
           <span>Edición de 120 pares</span>
         </div>
       </div>
 
-      <p class="seq__hint">Desplázate para girarla</p>
+      <p class="seq__hint">Desplázate para girarlo</p>
     </div>
   </section>
 
-  <!-- 2 ── MANIFIESTO -->
-  <section class="manifesto" id="manifiesto">
-    <p class="manifesto__body reveal">
-      No hacemos zapatillas rápidas.
-      Una piel curtida durante cuarenta y dos días no admite prisa,
-      y una horma tallada a mano tampoco.
+  <!-- 2 ── MANIFIESTO · primera sección de papel -->
+  <section class="manifesto on-paper" id="manifiesto">
+    <p class="manifesto__body reveal-lines">
+      No hacemos zapatos cómodos. Hacemos zapatos que no se notan,
+      que es otra cosa, y que cuesta cuatro años más de horma.
     </p>
-    <p class="manifesto__body reveal">
-      En Via dei Serragli salen ciento veinte pares al año.
+    <p class="manifesto__body manifesto__body--quiet reveal-lines">
+      En la rue de Beaune salen ciento veinte pares al año.
       El resto del tiempo se emplea en mirar.
     </p>
   </section>
 
-  <!-- 3 ── ATELIER -->
+  <!-- 3 ── EL PLANO · el dibujo se traza solo con el scroll (src/plan.ts).
+       Es la firma de la página: cero imágenes, cero peso, y explica el gancho
+       antes de que la Anatomía lo demuestre. -->
+  <section class="plan on-paper" id="plano">
+    <div class="plan__head">
+      <h2 class="section-title reveal-lines">El plano</h2>
+      <p class="lede reveal">
+        Un tacón de aguja es una pieza de ingeniería antes que una pieza de moda.
+        Quítale la piel y queda esto.
+      </p>
+    </div>
+
+    <figure class="plan__draw" aria-labelledby="planoCap">
+      <!-- Alzado a escala. Suelo en y=600, asiento del tacón en y=382:
+           218 unidades = 105 mm, así que 1 mm ≈ 2,08 unidades. La tapa mide
+           22 unidades ≈ 10 mm y el asiento 66 ≈ 32 mm.
+
+           El dibujo enseña la ESTRUCTURA, no la piel: suela, asiento, tacón y
+           cambrillón. Es la parte del zapato que nadie ve nunca, y es de lo que
+           habla toda la página. Dibujar además el corte de la pala no aportaba
+           nada y una silueta aproximada se nota. -->
+      <svg class="plan__svg" viewBox="110 300 700 400" role="img"
+           aria-labelledby="planoTitulo" preserveAspectRatio="xMidYMid meet">
+        <title id="planoTitulo">Alzado de la estructura del salón Aplomb: suela, asiento, tacón de 105 mm con tapa de 9 mm, y el cambrillón de acero de 1,2 mm.</title>
+
+        <!-- Suelo -->
+        <path class="plan__rule" d="M 140 600 L 762 600" />
+
+        <!-- Línea de suela y arco, en trazo de construcción: dónde iría el
+             zapato. Esta no se traza, se funde: lleva su propio discontinuo. -->
+        <path class="plan__hint" d="M 150 596 C 200 604 270 606 330 605 C 356 604 372 602 388 598 C 444 586 516 522 570 434 C 582 414 590 396 594 382" />
+
+        <!-- Asiento del tacón -->
+        <path class="plan__line" d="M 552 382 L 666 382" />
+
+        <!-- El tacón: cara delantera, tapa y espalda.
+             66 unidades en el asiento (32 mm) contra 22 en la tapa (10 mm):
+             se estrecha hacia abajo, que es lo que hace que sea de aguja. -->
+        <path class="plan__line" d="M 594 382 C 598 458 601 528 604 598 L 626 598 C 634 530 648 470 660 382" />
+
+        <!-- EL CAMBRILLÓN. Única línea gruesa y única en color: del apoyo del
+             metatarso al asiento del tacón. Es la pieza de la que habla la
+             página entera. -->
+        <path class="plan__shank" d="M 330 588 C 400 580 476 530 536 452 C 560 420 578 398 590 384" />
+
+        <!-- Cota: altura de tacón -->
+        <path class="plan__ext" d="M 670 382 L 762 382" />
+        <path class="plan__dim" d="M 754 382 L 754 600 M 747 382 L 761 382 M 747 600 L 761 600" />
+        <text class="plan__num plan__num--h" x="772" y="497">105 mm</text>
+
+        <!-- Cota: la tapa. Es el dato del titular. -->
+        <path class="plan__ext" d="M 604 606 L 604 650 M 626 606 L 626 650" />
+        <path class="plan__dim" d="M 586 644 L 644 644 M 604 637 L 604 651 M 626 637 L 626 651" />
+        <text class="plan__num plan__num--key" x="615" y="684" text-anchor="middle">9 mm</text>
+
+        <!-- Llamada al cambrillón. Solo el nombre: la medida está en la fila
+             de cifras de abajo y repetirla aquí ensuciaba el dibujo. -->
+        <path class="plan__dim" d="M 452 540 L 400 646 L 352 646" />
+        <text class="plan__num plan__num--key plan__num--c" x="344" y="652" text-anchor="end">Cambrillón</text>
+      </svg>
+      <figcaption id="planoCap" class="plan__cap">
+        La estructura del Aplomb: lo que sostiene el zapato, dibujado sin el zapato.
+        En trazo de puntos, por dónde va la suela.
+      </figcaption>
+    </figure>
+
+    <dl class="plan__figures">
+      <div class="plan__fig reveal">
+        <dt>Altura de tacón</dt>
+        <dd><span class="plan__figure">105</span> mm</dd>
+      </div>
+      <div class="plan__fig reveal">
+        <dt>Tapa</dt>
+        <dd><span class="plan__figure">9</span> mm</dd>
+      </div>
+      <div class="plan__fig reveal">
+        <dt>Cambrillón</dt>
+        <dd><span class="plan__figure">1,2</span> mm</dd>
+      </div>
+      <div class="plan__fig reveal">
+        <dt>Componentes</dt>
+        <dd><span class="plan__figure">11</span></dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- 4 ── ATELIER · escenario oscuro, maquetación alterna.
+       Ya no son tres tarjetas iguales: cada bloque cae a un lado. -->
   <section class="atelier" id="atelier">
-    <h2 class="section-title reveal">El atelier</h2>
+    <h2 class="section-title reveal-lines">El atelier</h2>
     <div class="crafts">
       <article class="craft reveal">
-        <figure><img src="/img/craft-montado.webp" alt="El talón y el cuello del Monolite, con la forma que deja la horma." width="720" height="900" loading="lazy" decoding="async" /></figure>
-        <h3>El montado</h3>
-        <p>La piel se tensa sobre la horma con tenazas y reposa tres días. Es la única parte del proceso que no se puede acelerar sin que se note a los seis meses.</p>
+        <figure><img src="/img/craft-montado.webp" alt="Las manos de un artesano tensando la piel color hueso sobre una horma de haya con tenazas." width="720" height="900" loading="lazy" decoding="async" /></figure>
+        <div class="craft__body">
+          <h3>El montado</h3>
+          <p>La piel se tensa sobre la horma con tenazas y reposa tres días. Es la única parte del proceso que no se puede acelerar sin que se note a los seis meses.</p>
+        </div>
       </article>
       <article class="craft reveal">
-        <figure><img src="/img/craft-curtido.webp" alt="Macro del grano de la piel de becerro del Monolite." width="720" height="900" loading="lazy" decoding="async" /></figure>
-        <h3>El curtido</h3>
-        <p>Cuarenta y dos días en fosos de corteza de roble. La piel sale más lenta y más viva: el color no se aplica, se gana.</p>
+        <figure><img src="/img/craft-cambrillon.webp" alt="Una lámina curva de acero templado sobre el banco, junto a una suela sin terminar." width="720" height="900" loading="lazy" decoding="async" /></figure>
+        <div class="craft__body">
+          <h3>El cambrillón</h3>
+          <p>Una lámina de acero templado de 1,2 mm se coloca entre la palmilla y la suela, del arco al asiento del tacón. Es lo que impide que un tacón de 105 mm ceda. No se ve nunca.</p>
+        </div>
       </article>
       <article class="craft reveal">
-        <figure><img src="/img/craft-patina.webp" alt="La puntera del Monolite, con la pátina quemada a mano." width="720" height="900" loading="lazy" decoding="async" /></figure>
-        <h3>La pátina</h3>
-        <p>El color se da a mano, capa sobre capa, con algodón. Ningún par sale igual que otro: es la firma de quien lo hizo.</p>
+        <figure><img src="/img/craft-forrado.webp" alt="Las manos de un artesano cosiendo a mano el forro de cabritilla dentro del zapato." width="720" height="900" loading="lazy" decoding="async" /></figure>
+        <div class="craft__body">
+          <h3>El forrado</h3>
+          <p>El forro de cabritilla se cose a mano, no se pega. Es la única superficie del zapato que toca el pie, y la única que no admite un atajo.</p>
+        </div>
       </article>
     </div>
   </section>
 
-  <!-- 4 ── ANATOMÍA · secuencia despiece -->
+  <!-- 5 ── ANATOMÍA · secuencia despiece. El cambrillón es el cuarto hito:
+       la pieza de la que habla toda la página, por fin a la vista. -->
   <section class="seq" id="anatomia" data-seq="explode" data-length="400">
     <div class="seq__pin">
       <canvas class="seq__canvas" aria-hidden="true"></canvas>
-      <img class="seq__still" src="/img/fallback-explode.webp" alt="El Monolite despiezado en sus cuatro capas." width="1440" height="810" loading="lazy" decoding="async" />
+      <img class="seq__still" src="/img/fallback-explode.webp" alt="El Aplomb despiezado en sus cinco capas, con el cambrillón de acero separado." width="1440" height="810" loading="lazy" decoding="async" />
       <div class="seq__ui seq__ui--left">
         <h2 class="seq__label">Anatomía</h2>
         <ol class="beats">
-          <li class="beat is-on"><h3>El upper</h3><p>Una pieza de becerro. Ninguna costura que lo divida.</p></li>
-          <li class="beat"><h3>Forro y plantilla</h3><p>Cabritilla cosida a mano sobre un lecho de corcho.</p></li>
-          <li class="beat"><h3>La mediasuela</h3><p>Corcho natural. A los diez días ya tiene tu forma.</p></li>
-          <li class="beat"><h3>La suela</h3><p>Caucho vulcanizado, unido con cosido Blake. Sustituible de por vida.</p></li>
+          <li class="beat is-on"><h3>La pala</h3><p>Una pieza de becerro color hueso. Ninguna costura a la vista.</p></li>
+          <li class="beat"><h3>El forro</h3><p>Cabritilla cosida a mano. Es lo único que toca el pie.</p></li>
+          <li class="beat"><h3>La palmilla</h3><p>Cuero prensado sobre corcho. A los diez días ya tiene tu forma.</p></li>
+          <li class="beat"><h3>El cambrillón</h3><p>Acero templado, 1,2 mm. Es lo único que sostiene el tacón, y no lo verás nunca.</p></li>
+          <li class="beat"><h3>Tacón y suela</h3><p>Bloque torneado y forrado en la misma piel. Suela de cuero cosida, tapa sustituible.</p></li>
         </ol>
       </div>
     </div>
   </section>
 
-  <!-- 5 ── FICHA TÉCNICA -->
-  <section class="spec" id="ficha">
-    <h2 class="section-title reveal">Ficha técnica</h2>
+  <!-- 6 ── FICHA TÉCNICA -->
+  <section class="spec on-paper" id="ficha">
+    <h2 class="section-title reveal-lines">Ficha técnica</h2>
     <dl class="spec__list">
-      <div class="spec__row reveal"><dt>Horma</dt><dd>CV-11, tallada a mano en haya</dd></div>
-      <div class="spec__row reveal"><dt>Piel</dt><dd>Becerro Vachetta, curtido vegetal 42 días</dd></div>
-      <div class="spec__row reveal"><dt>Construcción</dt><dd>Cosido Blake, montado a mano</dd></div>
-      <div class="spec__row reveal"><dt>Componentes</dt><dd>68</dd></div>
-      <div class="spec__row reveal"><dt>Mediasuela</dt><dd>Corcho natural moldeado</dd></div>
-      <div class="spec__row reveal"><dt>Suela</dt><dd>Caucho vulcanizado y cuero</dd></div>
-      <div class="spec__row reveal"><dt>Taller</dt><dd>34 horas por par</dd></div>
+      <div class="spec__row reveal"><dt>Horma</dt><dd>VP-09, tallada a mano en haya</dd></div>
+      <div class="spec__row reveal"><dt>Altura de tacón</dt><dd>105 mm</dd></div>
+      <div class="spec__row reveal"><dt>Tapa</dt><dd>9 mm, sustituible por la clienta</dd></div>
+      <div class="spec__row reveal"><dt>Cambrillón</dt><dd>Acero templado, 1,2 mm</dd></div>
+      <div class="spec__row reveal"><dt>Piel</dt><dd>Nappa de becerro, curtido vegetal</dd></div>
+      <div class="spec__row reveal"><dt>Forro</dt><dd>Cabritilla, cosido a mano</dd></div>
+      <div class="spec__row reveal"><dt>Construcción</dt><dd>Montado a mano, suela cosida</dd></div>
+      <div class="spec__row reveal"><dt>Componentes</dt><dd>11</dd></div>
+      <div class="spec__row reveal"><dt>Taller</dt><dd>26 horas por par</dd></div>
       <div class="spec__row reveal"><dt>Edición</dt><dd>120 pares numerados</dd></div>
-      <div class="spec__row reveal"><dt>Garantía</dt><dd>5 años · restauración de por vida</dd></div>
+      <div class="spec__row reveal"><dt>Garantía</dt><dd>5 años · retapado de por vida</dd></div>
     </dl>
   </section>
 
-  <!-- 6 ── HERITAGE -->
-  <section class="heritage" id="heritage">
-    <h2 class="section-title reveal">Ciento quince años</h2>
+  <!-- 7 ── LA CASA -->
+  <section class="heritage on-paper" id="casa">
+    <h2 class="section-title reveal-lines">Setenta y siete años</h2>
     <ol class="timeline">
-      <li class="reveal"><span class="year">1911</span><p>Ludovico Corvane abre un taller de calzado en Via dei Serragli, Florencia.</p></li>
-      <li class="reveal"><span class="year">1948</span><p>Se talla la CV-01, la primera horma propia de la casa. Aún se conserva.</p></li>
-      <li class="reveal"><span class="year">1974</span><p>La casa fija el curtido vegetal de cuarenta y dos días. No ha cambiado desde entonces.</p></li>
-      <li class="reveal"><span class="year">2009</span><p>El atelier presenta su primera silueta baja.</p></li>
-      <li class="reveal"><span class="year">2026</span><p>Monolite. Un upper de una sola pieza. Ciento veinte pares.</p></li>
+      <li class="reveal"><span class="year">1949</span><p>Colette Vasseur abre un taller de zapatos de noche en la rue de Beaune, París.</p></li>
+      <li class="reveal"><span class="year">1961</span><p>Se talla la VP-01, la primera horma propia de la casa. Sigue en el taller.</p></li>
+      <li class="reveal"><span class="year">1978</span><p>La casa fija el cambrillón de acero templado de 1,2 mm. No ha cambiado desde entonces.</p></li>
+      <li class="reveal"><span class="year">2004</span><p>La tapa pasa a ser sustituible sin devolver el zapato al taller.</p></li>
+      <li class="reveal"><span class="year">2026</span><p>Aplomb. Nueve milímetros. Ciento veinte pares.</p></li>
     </ol>
   </section>
 
-  <!-- 7 ── COLECCIÓN -->
-  <section class="collection" id="coleccion">
-    <h2 class="section-title reveal">La colección</h2>
-    <div class="editions">
-      <article class="edition reveal">
-        <h3>Naturale</h3>
-        <p class="edition__mat">Vachetta sin pigmento</p>
-        <p class="edition__note">Envejece con quien la lleva. Al año no se parece a ninguna otra.</p>
+  <!-- 8 ── COLECCIÓN · lista editorial, no tres tarjetas iguales.
+       Al señalar una variante, las otras dos se retiran. -->
+  <section class="collection on-paper" id="coleccion">
+    <h2 class="section-title reveal-lines">La colección</h2>
+    <ul class="editions">
+      <li class="edition reveal">
+        <h3 class="edition__name">Écru</h3>
+        <p class="edition__mat">Nappa sin pigmento</p>
+        <p class="edition__note">El color del zapato es el color de la piel. Al año no se parece a ningún otro par.</p>
         <p class="edition__price">Precio bajo solicitud</p>
-      </article>
-      <article class="edition reveal">
-        <h3>Notte</h3>
-        <p class="edition__mat">Pátina negra, siete capas</p>
-        <p class="edition__note">El negro se construye por transparencia; a contraluz aparece el marrón del fondo.</p>
+      </li>
+      <li class="edition reveal">
+        <h3 class="edition__name">Poudre</h3>
+        <p class="edition__mat">Nappa rosa polvo, siete capas</p>
+        <p class="edition__note">El rosa se construye por transparencia. A contraluz aparece el hueso del fondo.</p>
         <p class="edition__price">Precio bajo solicitud</p>
-      </article>
-      <article class="edition reveal">
-        <h3>Brunito</h3>
-        <p class="edition__mat">Pátina coñac, cantos a mano</p>
-        <p class="edition__note">Quemada a mano en punta y talón. Es la que más se pide y la que menos se repite.</p>
+      </li>
+      <li class="edition reveal">
+        <h3 class="edition__name">Argent</h3>
+        <p class="edition__mat">Nappa plata, cantos a mano</p>
+        <p class="edition__note">La única que devuelve la luz del cambrillón hacia fuera. Es la que menos se repite.</p>
         <p class="edition__price">Precio bajo solicitud</p>
-      </article>
-    </div>
+      </li>
+    </ul>
   </section>
 
-  <!-- 8 ── EDICIÓN LIMITADA + CITA -->
+  <!-- 9 ── EDICIÓN LIMITADA + CITA · vuelta al escenario oscuro para cerrar -->
   <section class="request" id="cita">
     <div class="request__num reveal">
       <span class="request__n">001</span><span class="request__d">/120</span>
     </div>
     <div class="request__body">
-      <h2 class="section-title reveal">Solicitar un par</h2>
+      <h2 class="section-title reveal-lines">Solicitar un par</h2>
       <p class="lede reveal">
-        Cada par se asigna en una cita privada en el taller de Florencia.
+        Cada par se asigna en una cita privada en el taller de París.
         Déjanos tu nombre y te escribimos con las fechas disponibles.
       </p>
       <form class="form reveal" id="requestForm" novalidate>
@@ -205,8 +306,8 @@
 </main>
 
 <footer class="footer">
-  <p class="footer__brand">Corvane</p>
-  <p>Via dei Serragli 42 · Florencia</p>
+  <p class="footer__brand">Vespra</p>
+  <p>12, rue de Beaune · París</p>
   <p class="footer__legal">Maison ficticia creada como demostración. Ninguna de las piezas está a la venta.</p>
 </footer>
 

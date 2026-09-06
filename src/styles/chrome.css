@@ -1,8 +1,8 @@
-/* ── LA ESPINA ────────────────────────────────────────────────
-   Una única línea vertical que recorre toda la página sin cortarse.
-   El Monolite se corta de una sola pieza; la página también tiene
-   una sola costura, y no se rompe en ningún momento.
-   El segmento champán marca cuánto llevas leído.               */
+/* ── LA ESPINA · EL CAMBRILLÓN ────────────────────────────────
+   Una única línea vertical de acero que recorre toda la página sin cortarse.
+   Es la misma pieza que sostiene el zapato: la lámina de acero templado que
+   va escondida en la suela y que la sección de Anatomía acaba enseñando.
+   El tramo lleno marca cuánto llevas leído, y las marcas son las secciones. */
 .spine {
   position: fixed;
   left: var(--spine-x);
@@ -11,6 +11,17 @@
   width: 1px;
   z-index: 40;
   pointer-events: none;
+}
+/* Marcas de sección, como la escala de una regla. Las coloca spine.ts a partir
+   de las mismas medidas cacheadas que ya usa para el relleno: cero lecturas
+   de layout extra. */
+.spine__tick {
+  position: absolute;
+  left: -3px;
+  width: 7px;
+  height: 1px;
+  background: var(--rule-strong);
+  transition: background 0.5s var(--ease);
 }
 .spine__track {
   position: absolute;
@@ -22,8 +33,9 @@
   inset-inline: 0;
   top: 0;
   height: 0%;
-  background: var(--champagne);
+  background: var(--spine-ink, var(--steel));
   transform-origin: top;
+  transition: background 0.5s var(--ease);
 }
 .spine__label {
   position: absolute;
@@ -35,7 +47,7 @@
   font-size: 0.625rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--ash);
+  color: var(--fg-2);
   white-space: nowrap;
   transition: opacity 0.4s var(--ease);
 }
@@ -74,14 +86,14 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: var(--ash);
+  color: var(--fg-2);
   padding-block: 0.8rem;
   transition: color 0.35s var(--ease);
 }
-.topnav a:hover { color: var(--bone); }
+.topnav a:hover { color: var(--fg); }
 .topnav__cta {
-  color: var(--champagne) !important;
-  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--champagne) 45%, transparent);
+  color: var(--accent) !important;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--accent) 45%, transparent);
 }
 @media (max-width: 380px) {
   .topnav__cta { font-size: 0.6875rem; letter-spacing: 0.12em; }
@@ -96,7 +108,7 @@
   padding-block: 3.5rem 4rem;
   display: grid;
   gap: 0.4rem;
-  color: var(--ash);
+  color: var(--fg-2);
   font-size: 0.8125rem;
 }
 .footer__brand {
@@ -104,8 +116,36 @@
   font-size: 1.15rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--bone);
+  color: var(--fg);
   margin-bottom: 0.4rem;
 }
 /* Sin opacity: rebajaba el contraste sobre el fondo a ~2.7:1 y no pasa AA. */
 .footer__legal { margin-top: 1.25rem; font-size: 0.75rem; max-width: 40ch; }
+
+
+/* ── El cromo cruza los dos suelos ────────────────────────────
+   .topbar y .spine son fijas: viven fuera de las secciones y por tanto fuera
+   del alcance de `.on-paper`. spine.ts pone `chrome-on-paper` en <html> cuando
+   lo que hay bajo la barra es una sección de papel, con las mismas medidas
+   cacheadas que ya usa para el relleno. Sin esto, la barra se queda negra
+   sobre marfil y el logotipo se pierde.                        */
+.topbar,
+.topnav a,
+.wordmark { transition: color 0.5s var(--ease), background 0.5s var(--ease); }
+
+.chrome-on-paper .topbar {
+  background: linear-gradient(to bottom, var(--paper) 34%, transparent);
+  color: var(--carbon);
+}
+.chrome-on-paper .topnav a { color: var(--slate); }
+.chrome-on-paper .topnav a:hover { color: var(--carbon); }
+.chrome-on-paper .topnav__cta {
+  color: var(--wine) !important;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--wine) 45%, transparent);
+}
+.chrome-on-paper .spine__track { background: rgba(18, 18, 20, 0.16); }
+.chrome-on-paper .spine__tick  { background: rgba(18, 18, 20, 0.30); }
+.chrome-on-paper .spine__label { color: var(--slate); }
+/* Sobre marfil el acero no se ve (1,8:1). Sigue siendo una línea de metal,
+   pero dibujada en oscuro, como en un plano. */
+.chrome-on-paper { --spine-ink: #3A3A3D; }
