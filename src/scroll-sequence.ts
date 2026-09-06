@@ -14,14 +14,34 @@ interface VariantMeta {
   /** Caja del producto dentro del fotograma, en fracciones de 0 a 1. */
   subject?: SubjectBox
 }
-interface SequenceMeta { frames: number; desktop: VariantMeta; mobile: VariantMeta }
+interface SequenceMeta {
+  frames: number
+  /** Color real del fondo del set, medido por el build. */
+  background?: string
+  desktop: VariantMeta
+  mobile: VariantMeta
+}
 
 const MANIFEST = manifest as unknown as Record<string, SequenceMeta | undefined>
 
 const MOBILE_QUERY = '(max-width: 700px)'
+/**
+ * Qué fracción del lienzo ocupa el PRODUCTO. En apaisado se deja sitio a la
+ * columna de texto de la izquierda; en vertical el texto va debajo y el
+ * producto puede respirar a lo ancho.
+ */
+const FILL_LANDSCAPE = { x: 0.52, y: 0.68 }
+const FILL_PORTRAIT = { x: 0.86, y: 0.52 }
 const PRELOAD_CONCURRENCY = 6
-/** Fase 1: uno de cada N. Fase 2: rellena el resto. */
-const COARSE_STEP = 4
+/**
+ * Fase 1: uno de cada N. Fase 2: rellena el resto.
+ *
+ * 8 y no 4: con 160 fotogramas, 1 de cada 4 son 40 imágenes descodificándose
+ * justo después de `load`, y en un móvil eso entra de lleno en la ventana que
+ * mide el Total Blocking Time. Con 1 de cada 8 el giro ya se sigue —20 pasos en
+ * una vuelta completa— y el resto llega en cuanto el usuario empieza a bajar.
+ */
+const COARSE_STEP = 8
 
 
 /**
@@ -75,6 +95,12 @@ export interface ScrollSequenceOptions {
    * En pantallas verticales manda siempre 0.38: ahí el texto va debajo.
    */
   focusLandscape?: number
+  /**
+   * Dónde cae el centro del producto a lo ancho, de 0 (izquierda) a 1 (derecha).
+   * Por defecto 0.5. Las dos secciones lo desplazan a la derecha porque su texto
+   * vive a la izquierda: con el producto centrado, el texto le cae encima.
+   */
+  focusX?: number
   onProgress?: (progress: number) => void
 }
 
@@ -88,9 +114,13 @@ export class ScrollSequence {
   private readonly lengthVh: number
   private readonly eager: boolean
   private readonly focusLandscape: number
+  private readonly focusX: number
   private readonly onProgress?: (p: number) => void
 
   private meta: SequenceMeta | undefined
+  /** Color del set, y el mismo en rgba con alfa 0 para los degradados. */
+  private fill = '#0B0B0D'
+  private fillClear = 'rgba(11, 11, 13, 0)'
   private variant: Variant = 'desktop'
   private count = 0
   private subject: SubjectBox = { x0: 0, x1: 1, y0: 0, y1: 1 }
@@ -117,6 +147,7 @@ export class ScrollSequence {
     this.lengthVh = opts.lengthVh
     this.eager = opts.eager ?? false
     this.focusLandscape = opts.focusLandscape ?? 0.5
+    this.focusX = opts.focusX ?? 0.5
     this.onProgress = opts.onProgress
 
     this.pin = this.section.querySelector<HTMLElement>('.seq__pin')!
@@ -125,6 +156,19 @@ export class ScrollSequence {
     this.ctx = this.canvas.getContext('2d', { alpha: false })
 
     this.meta = MANIFEST[this.name]
+
+    // El relleno del lienzo y el fundido de sus cantos usan el color REAL del
+    // fondo del set, que mide el build. Escrito a mano en el CSS, cualquier
+    // cambio de set deja una costura donde termina la imagen.
+    const bg = this.meta?.background
+    if (bg && /^#[0-9a-f]{6}$/i.test(bg)) {
+      this.fill = bg
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(bg.slice(i, i + 2), 16))
+      this.fillClear = `rgba(${r}, ${g}, ${b}, 0)`
+    }
+    // El CSS lo necesita para pintar el escenario ANTES de que el lienzo tenga
+    // nada: si no, se ve un destello del fondo de la página al entrar.
+    this.section.style.setProperty('--seq-bg', this.fill)
   }
 
   init(): void {
@@ -316,17 +360,22 @@ export class ScrollSequence {
     const iw = img.naturalWidth
     const ih = img.naturalHeight
 
-    // Llena todo lo posible (como object-fit: cover) PERO sin recortar nunca el
-    // producto. A pantalla completa en vertical, un cover puro se comería más
-    // del 60% del ancho y dejaría la zapatilla sin talón ni puntera.
+    // El producto se dimensiona por SÍ MISMO, no por llenar la pantalla.
+    //
+    // Antes se escalaba como `object-fit: cover`, y con el encuadre cerrado que
+    // produce ahora el build (el zapato llena el 88% del fotograma) eso dejaba
+    // el zapato ocupando el 98% del ancho del viewport: una macro, no una foto
+    // de producto. Se puede prescindir del cover porque el relleno del lienzo
+    // ya es el color REAL del ciclorama: lo que sobra alrededor no es un borde
+    // negro, es más fondo de estudio. Así el objeto tiene aire, que es la mitad
+    // de lo que hace que una foto se lea como de campaña.
     const sub = this.subject
     const pw = Math.max(1, (sub.x1 - sub.x0) * iw)
     const ph = Math.max(1, (sub.y1 - sub.y0) * ih)
-    const scale = Math.min(
-      Math.max(w / iw, h / ih),   // cover
-      w / pw,                      // el producto cabe de ancho
-      h / ph                       // …y de alto
-    )
+    const portrait = h > w
+    const fillX = portrait ? FILL_PORTRAIT.x : FILL_LANDSCAPE.x
+    const fillY = portrait ? FILL_PORTRAIT.y : FILL_LANDSCAPE.y
+    const scale = Math.min((w * fillX) / pw, (h * fillY) / ph)
     const dw = iw * scale
     const dh = ih * scale
 
@@ -334,13 +383,14 @@ export class ScrollSequence {
     // altura en vez de centrarlo: abajo va el texto y si no se solapan. En
     // apaisado lo decide la sección (el hero lo sube; la anatomía lo centra).
     const focusY = h > w ? 0.38 : this.focusLandscape
+    // En vertical el producto se centra a lo ancho: el texto va debajo, no al lado.
+    const focusX = h > w ? 0.5 : this.focusX
     const cx = ((sub.x0 + sub.x1) / 2) * iw * scale
     const cy = ((sub.y0 + sub.y1) / 2) * ih * scale
-    const dx = dw >= w ? Math.min(0, Math.max(w - dw, w / 2 - cx)) : (w - dw) / 2
+    const dx = dw >= w ? Math.min(0, Math.max(w - dw, w * focusX - cx)) : w * focusX - cx
     const dy = dh >= h ? Math.min(0, Math.max(h - dh, h * focusY - cy)) : h * focusY - cy
 
-    // El fondo del clip es casi negro puro; igualarlo hace casi invisible el borde.
-    const FILL = '#070708'
+    const FILL = this.fill
     ctx.fillStyle = FILL
     ctx.fillRect(0, 0, w, h)
     ctx.drawImage(img, dx, dy, dw, dh)
@@ -370,7 +420,7 @@ export class ScrollSequence {
   ): void {
     const g = ctx.createLinearGradient(fx, fy, tx, ty)
     g.addColorStop(0, color)
-    g.addColorStop(1, 'rgba(7, 7, 8, 0)')
+    g.addColorStop(1, this.fillClear)
     ctx.fillStyle = g
     ctx.fillRect(rx, ry, rw, rh)
   }

@@ -12,26 +12,29 @@
  * offsetTop/scrollHeight en cada frame de scroll fuerza un recálculo de
  * layout por frame (forced reflow) y dispara el Total Blocking Time.
  */
+/** Los tres suelos de la página. El cromo fijo tiene que seguirlos. */
+type Ground = 'paper' | 'set' | 'dark'
+
 interface SectionSpec {
   id: string
   name: string
-  /** Suelo de marfil: obliga a invertir la barra y la espina al pasar por debajo. */
-  paper?: boolean
+  ground: Ground
 }
 
 const SECTIONS: SectionSpec[] = [
-  { id: 'manifiesto', name: 'Manifiesto', paper: true },
-  { id: 'plano', name: 'El plano', paper: true },
-  { id: 'atelier', name: 'Atelier' },
-  { id: 'anatomia', name: 'Anatomía' },
-  { id: 'ficha', name: 'Ficha técnica', paper: true },
-  { id: 'casa', name: 'La casa', paper: true },
-  { id: 'coleccion', name: 'La colección', paper: true },
-  { id: 'cita', name: 'Solicitar un par' },
+  { id: 'manifiesto', name: 'Manifiesto', ground: 'paper' },
+  { id: 'plano', name: 'El plano', ground: 'paper' },
+  { id: 'atelier', name: 'Atelier', ground: 'paper' },
+  { id: 'anatomia', name: 'Anatomía', ground: 'set' },
+  { id: 'ficha', name: 'Ficha técnica', ground: 'paper' },
+  { id: 'casa', name: 'La casa', ground: 'paper' },
+  { id: 'coleccion', name: 'La colección', ground: 'paper' },
+  { id: 'cita', name: 'Solicitar un par', ground: 'dark' },
 ]
 
-/** Antes de la primera sección estás en el hero. */
+/** Antes de la primera sección estás en el hero, que es el escenario. */
 const HOME_LABEL = 'París'
+const HOME_GROUND: Ground = 'set'
 
 /**
  * A qué altura se pregunta "¿qué hay debajo de la barra?". Es el alto de la
@@ -83,7 +86,7 @@ export function initSpine(): void {
 
   let ticking = false
   let currentName = ''
-  let currentPaper: boolean | null = null
+  let currentGround: Ground | null = null
 
   const render = (): void => {
     ticking = false
@@ -91,11 +94,11 @@ export function initSpine(): void {
     fill.style.height = `${Math.min(100, Math.max(0, (y / maxScroll) * 100)).toFixed(2)}%`
 
     // Qué sección pasa por detrás de la barra: decide el color del cromo.
-    let paper = false
-    for (const s of tops) if (s.top <= y + CHROME_PROBE) paper = s.spec.paper === true
-    if (paper !== currentPaper) {
-      currentPaper = paper
-      document.documentElement.classList.toggle('chrome-on-paper', paper)
+    let ground: Ground = HOME_GROUND
+    for (const s of tops) if (s.top <= y + CHROME_PROBE) ground = s.spec.ground
+    if (ground !== currentGround) {
+      currentGround = ground
+      document.documentElement.dataset.chrome = ground
     }
 
     if (!label) return

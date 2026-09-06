@@ -46,6 +46,7 @@ function initSequences(): void {
       lengthVh,
       eager: isHero,
       focusLandscape: Number(section.dataset.focus) || undefined,
+      focusX: Number(section.dataset.focusX) || undefined,
       onProgress: (p) => {
         beats(p)
         // En apaisado el texto se retira entre el 15% y el 45% del giro y deja
@@ -102,17 +103,22 @@ function refreshOnce(): void {
   let pending = 2
   const done = (): void => {
     if (--pending > 0) return
-    requestAnimationFrame(() => ScrollTrigger.refresh())
+    requestAnimationFrame(() => {
+      ScrollTrigger.refresh()
+      // Partir los titulares en líneas va DESPUÉS de medir, y en su propio
+      // hueco. Partir antes obliga al refresh a medir un DOM con tres veces más
+      // nodos de texto, y las dos operaciones juntas costaban 1,6 s de bloqueo
+      // frente a los 200 ms que cuestan por separado. Se puede separar porque el
+      // partido ya no cambia el alto de ningún bloque (ver base.css).
+      const idle = (window as Window & {
+        requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void
+      }).requestIdleCallback
+      if (idle) idle(splitLines, { timeout: 1500 })
+      else setTimeout(splitLines, 300)
+    })
   }
-  // Partir en líneas cambia las cajas de línea, así que tiene que ocurrir
-  // ANTES de medir los pins — y solo cuando las fuentes ya están, o se partiría
-  // sobre la métrica de la fuente de respaldo y saldrían otras líneas.
-  const afterFonts = (): void => {
-    splitLines()
-    done()
-  }
-  if (document.fonts) document.fonts.ready.then(afterFonts, afterFonts)
-  else afterFonts()
+  if (document.fonts) document.fonts.ready.then(done, done)
+  else done()
   if (document.readyState === 'complete') done()
   else window.addEventListener('load', done, { once: true })
 }

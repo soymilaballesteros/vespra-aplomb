@@ -1,14 +1,16 @@
 /* ── 1 · HERO ────────────────────────────────────────────────
-   El hero ES la secuencia de rotación: lienzo a pantalla completa,
-   fijado, con el texto abajo a la izquierda. El póster va debajo del
-   lienzo y hace dos trabajos: es el elemento LCP (se pinta sin esperar
-   al JS) y es el respaldo si los fotogramas no llegan a cargar.
+   El hero ES la secuencia de rotación sobre el ciclorama del propio rodaje:
+   escenario a pantalla completa, fijado, con el texto a la izquierda. El
+   producto se desplaza a la derecha (data-focus-x) para dejarle sitio, en vez
+   de que el texto se apoye encima como pasaba antes.
 
-   El texto NO se anima al entrar. Es lo primero que se ve y una
-   animación de entrada aquí ya costó una vez 2,3 s de render delay. */
+   El póster va debajo del lienzo y hace dos trabajos: es el elemento LCP (se
+   pinta sin esperar al JS) y es el respaldo si los fotogramas no cargan.
+   Su texto NO se anima al entrar: una animación de entrada sobre lo primero
+   que se pinta ya costó una vez 2,3 s de render delay.                   */
 .hero { position: relative; }
 
-.hero__stage { background: #070708; }
+.hero__stage { background: var(--seq-bg, var(--pearl)); }
 
 .hero__poster,
 .hero__poster img {
@@ -17,11 +19,11 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-}
-/* En vertical el encuadre completo importa más que llenar la pantalla. */
-@media (max-aspect-ratio: 1 / 1) {
-  .hero__poster img { object-fit: contain; }
+  /* `contain`, no `cover`: el lienzo deja aire alrededor del producto y rellena
+     con el color del ciclorama. Si el póster recortara a cover, el relevo del
+     <img> al <canvas> daría un salto de escala bien visible. */
+  object-fit: contain;
+  object-position: 63% 50%;
 }
 
 /* El lienzo releva al póster en cuanto el JS ha dibujado en él el mismo
@@ -32,30 +34,16 @@
 .hero.seq.is-static .seq__canvas { display: none; }
 .hero.seq.is-static .hero__poster { opacity: 1; }
 
-/* Hunde la esquina donde vive el texto sin apagar el producto. El texto se
-   apoya abajo a la izquierda, así que el peso del degradado va ahí: con el
-   texto centrado a media altura, la entradilla cruzaba el zapato por el medio
-   y no se leía ni el texto ni la pieza. */
-.hero__stage::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(to top, rgba(7, 7, 8, 0.93) 0%, rgba(7, 7, 8, 0.55) 24%, rgba(7, 7, 8, 0) 50%),
-    linear-gradient(to right, rgba(7, 7, 8, 0.72) 0%, rgba(7, 7, 8, 0) 44%),
-    linear-gradient(to bottom, rgba(7, 7, 8, 0.7) 0%, rgba(7, 7, 8, 0) 18%);
-}
-
 .hero__copy {
   position: absolute;
   z-index: 2;
   left: var(--content-inset);
   right: var(--content-edge);
-  bottom: clamp(3.5rem, 11vh, 7rem);
-  max-width: 31rem;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: 29rem;
   display: grid;
-  gap: 1.35rem;
+  gap: 1.5rem;
   /* Se desvanece con el scroll (lo fija el JS) y deja la pieza limpia. */
   opacity: var(--hero-copy, 1);
 }
@@ -63,32 +51,19 @@
 .hero__title {
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(2.7rem, 6.6vw, 5.6rem);
+  font-size: clamp(2.7rem, 6.4vw, 5.4rem);
   line-height: 0.98;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.022em;
   text-wrap: balance;
 }
 
-.hero__meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.9rem;
-  font-size: 0.6875rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--fg-2);
-}
-.dot { width: 3px; height: 3px; border-radius: 50%; background: var(--accent); }
-
 @media (max-aspect-ratio: 1 / 1) {
-  .hero__copy { bottom: clamp(2rem, 6vh, 4rem); gap: 1.1rem; }
-  /* El degradado tiene que llegar hasta media pantalla: el texto se apoya
-     sobre la suela y sin esto el gris del estudio se lo come. */
-  .hero__stage::after {
-    background: linear-gradient(to top,
-      rgba(7, 7, 8, 0.97) 0%, rgba(7, 7, 8, 0.9) 26%,
-      rgba(7, 7, 8, 0.55) 44%, rgba(7, 7, 8, 0) 66%);
+  .hero__copy {
+    top: auto;
+    bottom: clamp(2rem, 6vh, 4rem);
+    transform: none;
+    gap: 1.1rem;
+    max-width: none;
   }
 }
 
@@ -149,10 +124,9 @@
 .plan__num--key { fill: var(--accent); }
 
 .plan__cap {
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 0.875rem;
   color: var(--fg-2);
+  max-width: 46ch;
 }
 
 .plan__figures {
@@ -274,7 +248,7 @@
   color: var(--fg-2);
   padding-top: 0.28rem;
 }
-.spec__row dd { margin: 0; font-family: var(--display); font-size: 1.15rem; }
+.spec__row dd { margin: 0; font-family: var(--display); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
 
 
 /* ── 6 · LA CASA ────────────────────────────────────────────── */
@@ -296,8 +270,7 @@
   font-weight: 400;
   font-size: clamp(1.9rem, 4.4vw, 3.4rem);
   line-height: 1;
-  color: var(--accent);
-  font-variant-numeric: lining-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 .timeline p { color: var(--fg-2); max-width: 48ch; }
 @media (max-width: 700px) { .timeline li { grid-template-columns: 1fr; gap: 0.5rem; } }
@@ -327,20 +300,21 @@
   font-size: clamp(1.9rem, 4vw, 3rem);
   line-height: 1;
 }
+/* El material va en cursiva de la Didone, no en versalitas rastreadas: dice lo
+   mismo y no viste de etiqueta algo que es descripción. */
 .edition__mat {
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent);
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--fg-2);
 }
 .edition__note { color: var(--fg-2); font-size: 0.975rem; line-height: 1.62; }
 .edition__price {
   justify-self: end;
   text-align: right;
-  font-size: 0.6875rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 0.875rem;
   color: var(--fg-2);
+  white-space: nowrap;
 }
 
 /* Solo con ratón: en táctil no hay "señalar", y el atenuado dejaría dos de
@@ -366,16 +340,14 @@
   align-items: start;
 }
 .request__num { font-family: var(--display); line-height: 0.86; letter-spacing: -0.03em; }
-.request__n { font-size: clamp(4.5rem, 13vw, 10rem); color: var(--accent); }
+.request__n { font-size: clamp(4.5rem, 13vw, 10rem); font-variant-numeric: tabular-nums; }
 .request__d { font-size: clamp(1.5rem, 3.5vw, 2.75rem); color: var(--fg-2); }
 .request__body { display: grid; gap: 1.5rem; }
 
 .form { display: grid; gap: 1.5rem; max-width: 30rem; margin-top: 0.75rem; }
 .field { display: grid; gap: 0.5rem; }
 .field label {
-  font-size: 0.6875rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-size: 0.875rem;
   color: var(--fg-2);
 }
 .field input {
@@ -390,10 +362,10 @@
 }
 .field input:hover { border-color: var(--fg-2); }
 .field input:focus { outline: none; border-color: var(--accent); }
-.field.is-bad input { border-color: #B4553F; }
+.field.is-bad input { border-color: #C0563C; }
 .field__error {
   font-size: 0.8125rem;
-  color: #C9705C;
+  color: #D07A63;
   min-height: 1.2em;
   opacity: 0;
   transition: opacity 0.3s var(--ease);
@@ -406,10 +378,8 @@
   border: 1px solid var(--rule-strong);
   color: var(--fg);
   font: inherit;
-  font-size: 0.75rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  padding: 1rem 2rem;
+  font-size: 0.9375rem;
+  padding: 0.95rem 2rem;
   cursor: pointer;
   transition: border-color 0.4s var(--ease), color 0.4s var(--ease), background 0.4s var(--ease);
 }

@@ -1,39 +1,41 @@
-/* La página tiene dos suelos, no uno.
-   ─ El ESCENARIO es negro cine: hero y anatomía, donde manda el producto.
-   ─ El PAPEL es marfil: manifiesto, plano, ficha, colección y pie, donde manda
-     el texto. Ese salto de luz es lo que separa un tema oscuro de un editorial.
+/* Dior no es cine negro: es gris de día. Su registro real es página clara,
+   tipografía negra y producto negro. Por eso esta web es clara de arriba abajo
+   y solo se oscurece para cerrar.
+
+   Tres suelos:
+   ─ EL SET     gris perla. El mismo ciclorama sobre el que está fotografiado el
+                zapato, así que el escenario y la fotografía son el mismo plano.
+   ─ EL PAPEL   hueso. Donde manda el texto.
+   ─ EL CIERRE  charol. El negro del propio producto, una sola vez, al final.
 
    Los colores crudos viven arriba. Debajo hay una capa semántica (--bg, --fg,
-   --accent…) que es la ÚNICA que usa el resto del CSS: así una sección cambia
-   de suelo poniéndose `.on-paper` y no hay que duplicar una sola regla. */
+   --accent…) que es la ÚNICA que usa el resto del CSS: una sección cambia de
+   suelo con una clase y no hay que duplicar una sola regla. */
 :root {
   /* ── Crudos ─────────────────────────────────────────────── */
-  --ink:      #0A0A0B;   /* escenario */
-  --ink-2:    #141417;
-  --paper:    #EAE6DD;   /* marfil, no blanco: el blanco puro pica sobre el negro */
-  --carbon:   #121214;   /* texto sobre marfil */
-  --bone:     #EDEAE3;   /* texto sobre negro */
-  /* Los dos secundarios van AL LÍMITE de AA a propósito, no por casualidad:
-     con #7A776F y #6C6961 daban 4,42 y 4,40 y Lighthouse los tumbaba. */
-  --ash:      #807D75;   /* secundario sobre negro · 4,8:1 */
-  --slate:    #656257;   /* secundario sobre marfil · 4,8:1 */
+  --pearl:  #B7B4AF;   /* el set */
+  --bone:   #E8E4DC;   /* el papel */
+  --charol: #0B0B0D;   /* el negro del producto */
+  --ivory:  #EFEBE2;   /* el canto de la suela: la firma de la casa */
+  --slate:  #56534C;   /* secundario sobre papel */
+  --stone:  #4E4B45;   /* secundario sobre el set */
+  --fog:    #8E8B84;   /* secundario sobre charol */
 
-  /* El acento cambia con el suelo, y eso es deliberado.
-     Sobre negro es ACERO: el cambrillón, la pieza que sostiene el zapato y que
-     da nombre a la línea vertical de la página.
-     Sobre marfil es BURDEOS: el color solo existe en el mundo impreso.
-     Un burdeos sobre negro daría 3,3:1 de contraste — ilegible en versalitas. */
-  --steel:    #AEB2B4;
-  --wine:     #5E1A22;
+  /* El ÚNICO color de la página, y no es un color de marca inventado: es el
+     acero del cambrillón. Aparece en la línea vertical que recorre la web, en
+     el trazo grueso del plano y en nada más. Todo lo demás es negro sobre claro. */
+  --steel:      #4C585F;
+  --steel-set:  #3D484F;   /* sobre gris perla, que es más oscuro que el papel */
+  --steel-dark: #9BA6AC;   /* sobre charol */
 
-  /* ── Semánticos · suelo por defecto: escenario ──────────── */
-  --bg:          var(--ink);
-  --bg-2:        var(--ink-2);
-  --fg:          var(--bone);
-  --fg-2:        var(--ash);
+  /* ── Semánticos · suelo por defecto: el papel ───────────── */
+  --bg:          var(--bone);
+  --bg-2:        #DFDAD0;
+  --fg:          var(--charol);
+  --fg-2:        var(--slate);
   --accent:      var(--steel);
-  --rule:        rgba(237, 234, 227, 0.13);
-  --rule-strong: rgba(237, 234, 227, 0.26);
+  --rule:        rgba(11, 11, 13, 0.16);
+  --rule-strong: rgba(11, 11, 13, 0.30);
 
   /* ── Tipografía ─────────────────────────────────────────── */
   --display: 'Bodoni Moda Variable', Didot, 'Bodoni MT', 'Times New Roman', serif;
@@ -43,7 +45,6 @@
      A tamaño de titular hay que pedirle el corte de display o los finos salen
      gruesos y la página parece un Times estirado. */
   --opsz-display: 96;
-  --opsz-text: 16;
 
   --gutter: clamp(1.25rem, 4vw, 3.5rem);
   --spine-min: clamp(1.25rem, 3.2vw, 3rem);
@@ -72,16 +73,30 @@
   --ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* El suelo de papel. Solo redefine los semánticos: ninguna regla del resto del
-   CSS sabe que esto existe. */
-.on-paper {
-  --bg:          var(--paper);
-  --bg-2:        #E3DED3;
-  --fg:          var(--carbon);
-  --fg-2:        var(--slate);
-  --accent:      var(--wine);
-  --rule:        rgba(18, 18, 20, 0.16);
-  --rule-strong: rgba(18, 18, 20, 0.30);
+/* El escenario del producto. El fondo lo pinta el JS con el color REAL del set
+   medido por el build (--seq-bg); el gris perla de aquí es solo el respaldo
+   para el instante anterior a que el manifest esté leído. */
+.on-set {
+  --bg:          var(--pearl);
+  --bg-2:        #ABA8A3;
+  --fg:          var(--charol);
+  --fg-2:        var(--stone);
+  --accent:      var(--steel-set);
+  --rule:        rgba(11, 11, 13, 0.22);
+  --rule-strong: rgba(11, 11, 13, 0.36);
+  background: var(--seq-bg, var(--bg));
+  color: var(--fg);
+}
+
+/* El cierre. Una sola vez, y al final. */
+.on-dark {
+  --bg:          var(--charol);
+  --bg-2:        #17171A;
+  --fg:          var(--bone);
+  --fg-2:        var(--fog);
+  --accent:      var(--steel-dark);
+  --rule:        rgba(232, 228, 220, 0.14);
+  --rule-strong: rgba(232, 228, 220, 0.28);
   background: var(--bg);
   color: var(--fg);
 }

@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>VESPRA — APLOMB. Nueve milímetros tocan el suelo.</title>
 <meta name="description" content="El APLOMB apoya todo su peso en una tapa de nueve milímetros, sostenida por una lámina de acero templado que nadie ve. Ciento veinte pares numerados. París, desde 1949." />
-<meta name="theme-color" content="#0A0A0B" />
+<meta name="theme-color" content="#E8E4DC" />
 <script>document.documentElement.dataset.js="1"</script>
 <link rel="preload" as="image" href="/img/hero-poster.webp"
       media="(min-width: 701px)" fetchpriority="high" />
 <link rel="preload" as="image" href="/img/hero-poster-mobile.webp"
       media="(max-width: 700px)" fetchpriority="high" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0A0B'/%3E%3Ctext x='16' y='23' font-family='Didot,Georgia,serif' font-size='20' fill='%23AEB2B4' text-anchor='middle'%3EV%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230B0B0D'/%3E%3Ctext x='16' y='23' font-family='Didot,Georgia,serif' font-size='20' fill='%23E8E4DC' text-anchor='middle'%3EV%3C/text%3E%3C/svg%3E" />
 </head>
 <body>
 
@@ -37,17 +37,17 @@
 
   <!-- 1 ── HERO · la rotación 360° es el escenario, enganchada al scroll.
        Sin animación de entrada en el texto: lo primero que se pinta no se anima. -->
-  <section class="hero seq" id="hero" data-seq="rotate" data-length="260" data-focus="0.44">
+  <section class="hero seq on-set" id="hero" data-seq="rotate" data-length="260" data-focus-x="0.63">
     <div class="seq__pin hero__stage">
       <!-- El póster es el elemento LCP: se pinta sin esperar al JavaScript.
            Lleva el MISMO encuadre que los fotogramas de cada juego, y el JS lo
            redibuja en el lienzo con su misma fórmula, así que el relevo no se
            nota. Si los fotogramas no llegaran a cargar, esto es lo que queda. -->
       <picture class="hero__poster">
-        <source media="(max-width: 700px)" srcset="/img/hero-poster-mobile.webp" width="720" height="720" />
+        <source media="(max-width: 700px)" srcset="/img/hero-poster-mobile.webp" width="960" height="540" />
         <img src="/img/hero-poster.webp"
-             alt="El salón Vespra Aplomb de perfil, en piel color hueso, sobre fondo de estudio casi negro."
-             width="1440" height="810" fetchpriority="high" decoding="async" />
+             alt="El salón Vespra Aplomb de tres cuartos, en charol negro, sobre un ciclorama gris perla."
+             width="1390" height="782" fetchpriority="high" decoding="async" />
       </picture>
       <canvas class="seq__canvas" aria-hidden="true"></canvas>
 
@@ -58,13 +58,6 @@
           nueve milímetros de diámetro. Lo que lo hace posible es una lámina
           de acero templado escondida en la suela, que nadie verá jamás.
         </p>
-        <div class="hero__meta">
-          <span>Aplomb</span>
-          <span class="dot"></span>
-          <span>París, 1949</span>
-          <span class="dot"></span>
-          <span>Edición de 120 pares</span>
-        </div>
       </div>
 
       <p class="seq__hint">Desplázate para girarlo</p>
@@ -72,7 +65,7 @@
   </section>
 
   <!-- 2 ── MANIFIESTO · primera sección de papel -->
-  <section class="manifesto on-paper" id="manifiesto">
+  <section class="manifesto" id="manifiesto">
     <p class="manifesto__body reveal-lines">
       No hacemos zapatos cómodos. Hacemos zapatos que no se notan,
       que es otra cosa, y que cuesta cuatro años más de horma.
@@ -86,7 +79,7 @@
   <!-- 3 ── EL PLANO · el dibujo se traza solo con el scroll (src/plan.ts).
        Es la firma de la página: cero imágenes, cero peso, y explica el gancho
        antes de que la Anatomía lo demuestre. -->
-  <section class="plan on-paper" id="plano">
+  <section class="plan" id="plano">
     <div class="plan__head">
       <h2 class="section-title reveal-lines">El plano</h2>
       <p class="lede reveal">
@@ -164,7 +157,7 @@
       </div>
       <div class="plan__fig reveal">
         <dt>Componentes</dt>
-        <dd><span class="plan__figure">11</span></dd>
+        <dd><span class="plan__figure">41</span></dd>
       </div>
     </dl>
   </section>
@@ -175,7 +168,7 @@
     <h2 class="section-title reveal-lines">El atelier</h2>
     <div class="crafts">
       <article class="craft reveal">
-        <figure><img src="/img/craft-montado.webp" alt="Las manos de un artesano tensando la piel color hueso sobre una horma de haya con tenazas." width="720" height="900" loading="lazy" decoding="async" /></figure>
+        <figure><img src="/img/craft-montado.webp" alt="Las manos de un artesano tensando el charol sobre una horma de haya con tenazas." width="720" height="900" loading="lazy" decoding="async" /></figure>
         <div class="craft__body">
           <h3>El montado</h3>
           <p>La piel se tensa sobre la horma con tenazas y reposa tres días. Es la única parte del proceso que no se puede acelerar sin que se note a los seis meses.</p>
@@ -189,10 +182,10 @@
         </div>
       </article>
       <article class="craft reveal">
-        <figure><img src="/img/craft-forrado.webp" alt="Las manos de un artesano cosiendo a mano el forro de cabritilla dentro del zapato." width="720" height="900" loading="lazy" decoding="async" /></figure>
+        <figure><img src="/img/craft-canto.webp" alt="Un algodón aplicando pigmento marfil al canto de una suela sujeta en un tornillo de madera." width="720" height="900" loading="lazy" decoding="async" /></figure>
         <div class="craft__body">
-          <h3>El forrado</h3>
-          <p>El forro de cabritilla se cose a mano, no se pega. Es la única superficie del zapato que toca el pie, y la única que no admite un atajo.</p>
+          <h3>El canto</h3>
+          <p>El canto de la suela se pinta a mano en marfil, capa sobre capa, hasta que la línea es continua. Dos milímetros que recorren todo el perímetro: es por donde se reconoce un Vespra a tres metros.</p>
         </div>
       </article>
     </div>
@@ -200,35 +193,35 @@
 
   <!-- 5 ── ANATOMÍA · secuencia despiece. El cambrillón es el cuarto hito:
        la pieza de la que habla toda la página, por fin a la vista. -->
-  <section class="seq" id="anatomia" data-seq="explode" data-length="400">
+  <section class="seq on-set" id="anatomia" data-seq="explode" data-length="340" data-focus-x="0.66">
     <div class="seq__pin">
       <canvas class="seq__canvas" aria-hidden="true"></canvas>
       <img class="seq__still" src="/img/fallback-explode.webp" alt="El Aplomb despiezado en sus cinco capas, con el cambrillón de acero separado." width="1440" height="810" loading="lazy" decoding="async" />
       <div class="seq__ui seq__ui--left">
-        <h2 class="seq__label">Anatomía</h2>
+        <h2 class="seq__heading">Anatomía</h2>
         <ol class="beats">
-          <li class="beat is-on"><h3>La pala</h3><p>Una pieza de becerro color hueso. Ninguna costura a la vista.</p></li>
+          <li class="beat is-on"><h3>La pala</h3><p>Una sola pieza de charol negro. Ninguna costura a la vista.</p></li>
           <li class="beat"><h3>El forro</h3><p>Cabritilla cosida a mano. Es lo único que toca el pie.</p></li>
-          <li class="beat"><h3>La palmilla</h3><p>Cuero prensado sobre corcho. A los diez días ya tiene tu forma.</p></li>
+          <li class="beat"><h3>La palmilla</h3><p>Cuero vegetal sobre lecho de corcho. A los diez días cede donde debe.</p></li>
           <li class="beat"><h3>El cambrillón</h3><p>Acero templado, 1,2 mm. Es lo único que sostiene el tacón, y no lo verás nunca.</p></li>
-          <li class="beat"><h3>Tacón y suela</h3><p>Bloque torneado y forrado en la misma piel. Suela de cuero cosida, tapa sustituible.</p></li>
+          <li class="beat"><h3>Tacón y suela</h3><p>Tacón torneado en haya y forrado a mano. Suela de cuero, canto en marfil.</p></li>
         </ol>
       </div>
     </div>
   </section>
 
   <!-- 6 ── FICHA TÉCNICA -->
-  <section class="spec on-paper" id="ficha">
+  <section class="spec" id="ficha">
     <h2 class="section-title reveal-lines">Ficha técnica</h2>
     <dl class="spec__list">
       <div class="spec__row reveal"><dt>Horma</dt><dd>VP-09, tallada a mano en haya</dd></div>
       <div class="spec__row reveal"><dt>Altura de tacón</dt><dd>105 mm</dd></div>
       <div class="spec__row reveal"><dt>Tapa</dt><dd>9 mm, sustituible por la clienta</dd></div>
       <div class="spec__row reveal"><dt>Cambrillón</dt><dd>Acero templado, 1,2 mm</dd></div>
-      <div class="spec__row reveal"><dt>Piel</dt><dd>Nappa de becerro, curtido vegetal</dd></div>
+      <div class="spec__row reveal"><dt>Piel</dt><dd>Charol de becerro sobre napa curtida 42 días</dd></div>
       <div class="spec__row reveal"><dt>Forro</dt><dd>Cabritilla, cosido a mano</dd></div>
       <div class="spec__row reveal"><dt>Construcción</dt><dd>Montado a mano, suela cosida</dd></div>
-      <div class="spec__row reveal"><dt>Componentes</dt><dd>11</dd></div>
+      <div class="spec__row reveal"><dt>Componentes</dt><dd>41</dd></div>
       <div class="spec__row reveal"><dt>Taller</dt><dd>26 horas por par</dd></div>
       <div class="spec__row reveal"><dt>Edición</dt><dd>120 pares numerados</dd></div>
       <div class="spec__row reveal"><dt>Garantía</dt><dd>5 años · retapado de por vida</dd></div>
@@ -236,7 +229,7 @@
   </section>
 
   <!-- 7 ── LA CASA -->
-  <section class="heritage on-paper" id="casa">
+  <section class="heritage" id="casa">
     <h2 class="section-title reveal-lines">Setenta y siete años</h2>
     <ol class="timeline">
       <li class="reveal"><span class="year">1949</span><p>Colette Vasseur abre un taller de zapatos de noche en la rue de Beaune, París.</p></li>
@@ -249,24 +242,24 @@
 
   <!-- 8 ── COLECCIÓN · lista editorial, no tres tarjetas iguales.
        Al señalar una variante, las otras dos se retiran. -->
-  <section class="collection on-paper" id="coleccion">
+  <section class="collection" id="coleccion">
     <h2 class="section-title reveal-lines">La colección</h2>
     <ul class="editions">
       <li class="edition reveal">
-        <h3 class="edition__name">Écru</h3>
-        <p class="edition__mat">Nappa sin pigmento</p>
-        <p class="edition__note">El color del zapato es el color de la piel. Al año no se parece a ningún otro par.</p>
+        <h3 class="edition__name">Noir</h3>
+        <p class="edition__mat">Charol negro, canto marfil</p>
+        <p class="edition__note">El charol devuelve una sola banda de luz sobre el empeine. Es el que enseña mejor la horma.</p>
         <p class="edition__price">Precio bajo solicitud</p>
       </li>
       <li class="edition reveal">
         <h3 class="edition__name">Poudre</h3>
-        <p class="edition__mat">Nappa rosa polvo, siete capas</p>
-        <p class="edition__note">El rosa se construye por transparencia. A contraluz aparece el hueso del fondo.</p>
+        <p class="edition__mat">Napa mate, rosa polvo</p>
+        <p class="edition__note">Mate donde el charol brilla. El canto marfil se pierde contra la piel y hay que buscarlo.</p>
         <p class="edition__price">Precio bajo solicitud</p>
       </li>
       <li class="edition reveal">
         <h3 class="edition__name">Argent</h3>
-        <p class="edition__mat">Nappa plata, cantos a mano</p>
+        <p class="edition__mat">Napa plata líquida</p>
         <p class="edition__note">La única que devuelve la luz del cambrillón hacia fuera. Es la que menos se repite.</p>
         <p class="edition__price">Precio bajo solicitud</p>
       </li>
@@ -274,7 +267,7 @@
   </section>
 
   <!-- 9 ── EDICIÓN LIMITADA + CITA · vuelta al escenario oscuro para cerrar -->
-  <section class="request" id="cita">
+  <section class="request on-dark" id="cita">
     <div class="request__num reveal">
       <span class="request__n">001</span><span class="request__d">/120</span>
     </div>
@@ -305,7 +298,7 @@
 
 </main>
 
-<footer class="footer">
+<footer class="footer on-dark">
   <p class="footer__brand">Vespra</p>
   <p>12, rue de Beaune · París</p>
   <p class="footer__legal">Maison ficticia creada como demostración. Ninguna de las piezas está a la venta.</p>

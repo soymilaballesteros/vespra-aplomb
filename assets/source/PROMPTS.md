@@ -1,10 +1,12 @@
 # VESPRA — APLOMB · Prompts de generación
 
-Maison ficticia. París, 1949. Modelo **APLOMB**: salón de tacón de aguja de 105 mm.
+Maison ficticia. París, 1949. Modelo **APLOMB**: salón de charol negro, 105 mm.
 Gancho: *todo tu peso pasa por nueve milímetros* — el cambrillón, la lámina de acero
 templado escondida en la suela que es lo único que sostiene un tacón de aguja.
+Firma de la casa: **el canto de la suela pintado en marfil**, una línea de dos milímetros
+que recorre todo el perímetro y se ve en cualquier vista de tres cuartos.
 
-Orden: **1) imagen → 2) clip rotación → 3) clip despiece**.
+Orden: **1) imagen maestra → 2) clip rotación → 3) clip despiece → 4) atelier**.
 Los dos vídeos usan la MISMA imagen como fotograma inicial (image-to-video).
 Eso garantiza que sea literalmente el mismo zapato en las dos animaciones.
 
@@ -12,201 +14,202 @@ Eso garantiza que sea literalmente el mismo zapato en las dos animaciones.
 
 ## Ajustes técnicos
 
-- **Imagen**: 16:9, la máxima resolución que te dé la herramienta.
-  Guardar como `assets/source/product-ref.png`
-- **Vídeos**: **1080p**, **16:9**, **8-10 segundos**, **sin audio**, modo **image-to-video**
-  (la imagen de arriba como primer fotograma).
-  Guardar como `assets/source/product-rotate.mp4` y `assets/source/product-explode.mp4`
+| Asset | Formato | Archivo |
+|---|---|---|
+| Imagen maestra | **16:9**, máxima resolución (mín. 1920×1080) | `assets/source/product-ref.png` |
+| Clip rotación 360° | **16:9**, 1920×1080, **10 s a 24 fps o más** | `assets/source/product-rotate.mp4` |
+| Clip despiece | **16:9**, 1920×1080, mismos ajustes | `assets/source/product-explode.mp4` |
+| 3 macros del atelier | 4:5 vertical, 1200×1500 | `assets/source/atelier-{montado,cambrillon,canto}.png` |
 
-**Por qué 16:9 y no vertical.** Un salón de perfil es ~1,9 veces más largo que alto; de frente
-es estrecho y alto. Durante el giro completo, la caja que ocupa el zapato es la unión de todas
-las poses: ~1,9:1, casi exactamente 16:9. En 16:9 a 1080p el zapato conserva ~1.340 px reales
-de ancho; en 1:1 solo ~810. El build mide esa caja solo y recorta el móvil a partir de ella.
+**16:9 y no vertical.** Un salón de perfil es ~1,9 veces más largo que alto; de frente es
+estrecho y alto. Durante el giro completo, la caja que ocupa el zapato es la unión de todas
+las poses: ~1,9:1, casi exactamente 16:9. En 16:9 a 1080p el zapato conserva ~1.630 px de
+ancho; en 1:1 solo ~810.
 
----
-
-## ⚠︎ La regla que no es obvia: EL ZAPATO TIENE QUE SER MÁS CLARO QUE EL FONDO
-
-El script `scripts/build-frames.mjs` localiza el producto **por luminosidad**: saca el clip en
-gris y busca los píxeles que superan 70 sobre 255. El fondo de estudio ronda 4-30 y el producto
-tiene que pasar de 90. De ahí salen el recorte de móvil, el encuadre del lienzo y el póster.
-
-**Un zapato negro sobre fondo negro rompe esa medición** y, además, no se vería en la web.
-Por eso el APLOMB es de piel color hueso. Si cambias de material, elige uno claro
-(hueso, marfil, nude, plata) — nunca negro, ni burdeos oscuro, ni charol negro.
-
-Comprobación rápida antes de dar la imagen por buena: ponla en blanco y negro y baja mucho el
-brillo. El zapato entero, **tacón incluido**, tiene que seguir despegándose del fondo.
+**Mínimo 200 fotogramas de origen.** El build extrae 160 del giro. Un clip de 5 s a 24 fps
+solo tiene 120: al pedir 160 se repetirían fotogramas y el giro daría tirones. 10 s a 24 fps
+(240) o 8 s a 30 fps (240) van sobrados.
 
 ---
 
-## 1 · IMAGEN DE REFERENCIA
+## ⚠︎ Las dos reglas que deciden si el material sirve
 
-```
-Ultra-detailed photorealistic product photograph of a single luxury women's pointed-toe pump,
-shot in a professional studio.
+### 1 · El zapato tiene que llenar el 85 % del ancho
 
-THE SHOE: A couture stiletto pump in bone-white nappa calf leather with a soft satin-matte
-lustre. A sharply pointed, elongated almond toe. A low, cleanly curved topline that exposes
-the arch of the foot. A very slender stiletto heel, 105 mm tall, covered in the same bone
-leather, tapering to a small tip. Bone-coloured leather lining just visible at the topline.
-The outsole is natural undyed vegetable-tanned leather in a pale honey tone, its edge
-burnished by hand — the sole is NOT red and NOT black. No logos, no branding, no hardware,
-no buckle, no straps, no platform. Architectural, restrained, Parisian couture — a house
-shoe, not a fashion-week prop.
+En su pose más ancha —la de perfil— el zapato ocupa el **85 % del ancho del encuadre**.
 
-COMPOSITION: One single right shoe, lateral profile view rotated about 20 degrees toward the
-camera, standing on the studio floor. Centred in frame, occupying roughly 68% of the image
-width, with generous negative space above and below. Camera at product level, straight on,
-no tilt, no low angle.
+No es una manía de composición: cada píxel que gastas en fondo vacío es un píxel que el
+lienzo tiene que ampliar después. En el clip anterior el zapato llenaba el 64 % y el build
+tenía que recortar para llegar al 88 %, perdiendo resolución por el camino. Si viene ya
+encuadrado, no se pierde nada. `pnpm frames` te avisa si baja del 70 %.
 
-LIGHTING & BACKGROUND: Very dark charcoal-grey seamless studio background, almost black.
-Cinematic studio lighting: one large soft key light from the upper left, a cool silver rim
-light raking along the topline, the back of the heel counter and the full length of the
-stiletto heel so the whole silhouette separates cleanly from the backdrop, and a soft fill.
-Deep rich shadows, with a soft contact shadow under the sole. The shoe reads clearly BRIGHTER
-than the background across its entire silhouette — including the thin heel, which must never
-disappear into the dark.
+### 2 · El zapato tiene que separarse del fondo por valor
 
-STYLE: Shot on a Sony A7R IV with a 90mm macro lens. Photorealistic, hyper-realistic, 8k,
-extreme detail, visible leather grain and pores, natural colour grading, shallow and constant
-depth of field, high-end advertising still. 16:9 aspect ratio. No text, no logos, no watermark,
-no people, no props, no reflections of other objects.
-```
+El build localiza la pieza midiendo su **contraste contra el fondo**, y de ahí salen el
+recorte, el encuadre del lienzo y el póster. Charol negro sobre gris perla se separa de
+sobra — pero el lado en sombra del zapato puede fundirse con el gris si falta la luz de
+contorno. Por eso el prompt la pide explícitamente.
+
+Comprobación antes de dar la imagen por buena: ponla en blanco y negro y sube mucho el
+contraste. El **contorno completo** del zapato, tacón incluido, tiene que seguir leyéndose.
+Si `pnpm frames` no distingue el producto, te lo dice y no genera nada.
 
 ---
 
-## 2 · CLIP A — ROTACIÓN 360°  (image-to-video con la imagen de arriba)
+## 1 · IMAGEN MAESTRA
 
 ```
-The exact bone-white pump from the reference image, rotating slowly on its vertical axis as if
-on an invisible turntable: exactly one full 360-degree revolution that begins and ends in
-precisely the same position as the first frame.
+Editorial product photograph of a single black patent leather pointed-toe pump,
+105mm sculpted stiletto heel, seamless one-piece upper with no visible seams,
+ivory-painted sole edge — a clean 2mm ivory line running the whole perimeter.
+Three-quarter view, heel toward camera, toe angled away.
 
-The camera is completely static — locked off on a tripod. No zoom, no push-in, no handheld
-shake, no parallax, no camera movement of any kind.
+Studio: infinite cyclorama, cool pearl grey background (#B7B4AF), smooth vertical
+falloff, no visible horizon line. Lighting: one large soft key at 45 degrees upper
+left, faint bounce from the right, and a narrow rim light behind tracing the topline
+of the vamp and the full length of the heel, so the whole silhouette separates from
+the grey. Short crisp specular highlight along the instep — patent, not glossy plastic.
 
-The rotation speed is perfectly constant and linear from the first frame to the last: no
-ease-in, no ease-out, no acceleration, no pause. The shoe rotates at a mathematically uniform
-rate.
+Shot on 120mm equivalent, camera at shoe height, shallow compression, no wide-angle
+distortion. Soft contact shadow fading within 4cm, no mirror floor.
 
-The shoe stays exactly the same size in frame throughout, fully inside the frame at all times
-with a clear margin on every side — including at the widest pose, when the shoe is seen in full
-profile. The slender stiletto heel stays completely visible and fully lit for the entire
-revolution; it must never blend into the background or be cut off.
-
-Identical dark charcoal studio background and identical cinematic lighting throughout, with
-constant exposure. Cool silver highlights glide smoothly along the topline and down the heel
-as the shoe turns.
-
-Photorealistic, extreme detail, single continuous take, no cuts, no flicker, no morphing, no
-text, no people.
+The shoe fills 85% of the frame width. Muted, desaturated, quiet. No props, no flowers,
+no marble, no fabric, no smoke, no second shoe, no text, no logo, NO RED SOLE, no
+quilted diamond pattern. Photographic, not CGI. 16:9, extremely sharp, fine grain of
+the patent visible.
 ```
 
 ---
 
-## 3 · CLIP B — DESPIECE  (image-to-video con la MISMA imagen)
+## 2 · CLIP A — ROTACIÓN 360° (image-to-video con la imagen de arriba)
 
 ```
-Ultra-detailed macro product video of the exact bone-white pump from the reference image, in one
-single continuous take with a completely static locked-off camera.
+The exact black patent pump from the reference image, rotating slowly on its vertical
+axis as if on an invisible turntable: exactly one full 360-degree revolution that begins
+and ends in precisely the same position as the first frame.
 
-The shoe begins fully assembled in lateral profile, exactly as in the reference image but sized
-to occupy about 45% of the frame width, and holds still for 1 second. Then it slowly opens into
-a precise technical exploded view, in the style of an engineering exploded diagram, along one
-shared vertical axis, each component floating apart in clean, evenly spaced, compact layers:
+The camera is completely static — locked off on a tripod. No zoom, no push-in, no
+handheld shake, no parallax, no camera movement of any kind.
 
-  1. the bone nappa leather upper rises first,
-  2. then the bone leather lining separates,
-  3. then the leather insole lifts away,
-  4. then a slender, curved, polished tempered-STEEL SHANK is revealed and floats free — a thin
-     mirror-bright metal strip that runs from the ball of the foot to the heel seat, unmistakably
-     metal against all the pale leather,
-  5. then the natural leather outsole detaches,
-  6. and finally the covered 105 mm stiletto heel settles at the bottom.
+The rotation speed is perfectly constant and linear from the first frame to the last:
+no ease-in, no ease-out, no acceleration, no pause.
 
-THE STEEL SHANK IS THE HERO COMPONENT: it must be clearly visible, clearly separate from the
-other layers, and clearly metal — cool, reflective, and distinct from the matte bone leather.
+The shoe stays exactly the same size in frame throughout and never leaves the frame. In
+its widest pose — full profile — it fills 85% of the frame width with a clear margin at
+both sides. The ivory sole edge stays visible as a continuous clean line. The slender
+stiletto heel stays lit and separated from the grey background for the entire revolution.
 
-Every component stays perfectly aligned on the same axis, evenly spaced, gently floating. The
-gaps between layers stay compact so that the ENTIRE exploded assembly remains inside the frame
-with a margin at the top and the bottom at every moment — nothing is ever cropped. The motion is
-slow, linear and perfectly constant from beginning to end — no easing, no speed changes, no
-bounce. The shot ends holding still for 1 second on the fully separated assembly.
+Identical pearl grey cyclorama and identical lighting throughout, with constant exposure.
+The specular highlight glides smoothly along the instep as the shoe turns.
 
-The camera never moves: no zoom, no pan, no tilt, no shake. Identical dark charcoal studio
-background, identical cinematic lighting and constant exposure throughout. Cool silver
-reflections on the leather and a bright specular glint along the steel shank.
-
-Photorealistic, extreme detail, shallow and constant depth of field, single continuous take,
-no cuts, no flicker, no text, no people.
+Photorealistic, extreme detail, single continuous take, no cuts, no flicker, no morphing,
+no text, no people.
 ```
 
 ---
 
-## Cómo revisar los clips antes de darlos por buenos
+## 3 · CLIP B — DESPIECE (image-to-video con la MISMA imagen)
 
-1. ¿La cámara se queda QUIETA? (si hace zoom o se mueve, el scroll "flota" y se nota)
-2. ¿La velocidad es constante? (si acelera o frena, el scrub va a tirones)
+```
+Ultra-detailed macro product video of the exact black patent pump from the reference
+image, in one single continuous take with a completely static locked-off camera.
+
+The shoe begins fully assembled in lateral profile, sized to occupy about 55% of the
+frame width, and holds still for 1 second. Then it opens into a precise technical
+exploded view along one shared vertical axis, each component floating apart in clean,
+evenly spaced layers, in this order and staggered — each piece starts moving slightly
+after the previous one, never all at once:
+
+  1. the black patent upper rises and opens up and to the left,
+  2. the kidskin lining slides out behind it,
+  3. the leather insole lowers,
+  4. a slender curved POLISHED STEEL SHANK slides toward the viewer and hangs suspended
+     in the centre — a thin mirror-bright metal strip, unmistakably metal against all the
+     black patent and pale leather,
+  5. the covered stiletto heel lowers and rotates about 15 degrees,
+  6. the leather outsole with its ivory-painted edge settles at the bottom.
+
+THE STEEL SHANK IS THE HERO COMPONENT: clearly visible, clearly separate, clearly metal.
+
+Maximum separation is 1.4 times the length of the shoe. The whole exploded assembly stays
+inside the frame with a margin at top and bottom at every moment — nothing is ever
+cropped. The motion is slow and even, with gentle easing in and out — no bounce, no
+overshoot. The shot ends holding still for 1 second on the fully separated assembly.
+
+The camera never moves: no zoom, no pan, no tilt, no shake. Identical pearl grey
+cyclorama, identical lighting and constant exposure throughout.
+
+Photorealistic, extreme detail, shallow and constant depth of field, single continuous
+take, no cuts, no flicker, no text, no people.
+```
+
+---
+
+## La prueba de fuego
+
+Ésta es la que decide si el material vale, y va por delante de la lista de siempre.
+
+**Para el clip a mitad del giro, saca ese fotograma suelto y míralo aislado.** Tiene que
+aguantar como fotografía de campaña. Si aguanta, la web es de lujo. Si no, no hay animación
+que lo arregle.
+
+Lo que hace fallar esta prueba, y que solo se ve al parar el scroll:
+
+1. ¿La cámara se queda QUIETA? Si hace zoom o se mueve, el scroll "flota".
+2. ¿La velocidad es constante? Si acelera o frena, el scrub va a tirones.
 3. Rotación: ¿acaba en la MISMA posición en la que empieza?
-4. ¿El zapato se mantiene igual todo el clip? (sin morphing ni parpadeos)
+4. **¿Es el MISMO zapato en todos los fotogramas?** Éste es el que suspende de verdad. La
+   punta cambia de curva, el tacón cambia de altura, el canto marfil aparece y desaparece.
+   Al pasarlo a scroll —donde tú controlas la velocidad y puedes pararte donde quieras— esa
+   respiración se ve entera, y es exactamente lo que hace que una web se lea como "hecha con
+   IA" en vez de "hecha por una casa".
 5. ¿Se ve entero y con margen en TODAS las poses, incluida la de perfil?
-6. ¿El tacón se despega del fondo en todo momento, o hay poses en las que se pierde?
-7. Despiece: **¿se ve el cambrillón de acero?** Si no se ve, el clip no vale: es la pieza
-   que justifica toda la página.
-8. Despiece: ¿el conjunto separado cabe entero en el encuadre, sin cortarse por arriba?
+6. ¿El contorno se despega del gris en todo momento, o hay poses donde se pierde?
+7. Despiece: **¿se ve el cambrillón de acero?** Si no, el clip no vale: es la pieza que
+   justifica toda la página.
+8. Despiece: ¿el conjunto separado cabe entero, sin cortarse por arriba?
+
+**Si falla el punto 4, la salida es 3D**, no seguir intentándolo con la IA: imagen maestra →
+malla (Meshy, Tripo, Rodin) → Blender/Cycles, órbita de 160 fotogramas y despiece desde la
+misma escena. Materiales de charol: base #0A0A0B, rugosidad 0.08, clearcoat 1.0 con rugosidad
+0.03. Fondo difuso #B7B4AF. Avísame y añado soporte para secuencia de PNG en el build; hoy
+solo come vídeo.
+
+Si falla solo en el despiece, la salida intermedia es sustituirlo por 4-5 stills fijos con
+transición cruzada. Un despiece inestable hace más daño que no tener despiece.
 
 ---
 
 ## 4 · LAS TRES IMÁGENES DEL ATELIER
 
-Estas tres **sí hacen falta** esta vez. En la web anterior eran macros recortadas del propio
-clip y es el punto más flojo que tiene. Formato **4:5 vertical**.
-Guardar como `assets/source/atelier-montado.png`, `atelier-cambrillon.png`, `atelier-forrado.png`.
-El build las detecta solas: si están, las usa; si no, vuelve a recortar macros de la referencia.
+Formato **4:5 vertical, 1200×1500**. El build las detecta solas: si están, las usa; si no,
+recorta macros de la imagen maestra, que es el punto flojo que tenía la web anterior.
 
-**a) El montado** — `atelier-montado.png`
+Base común para las tres:
+
 ```
-Ultra-detailed photorealistic macro photograph of an artisan's hands stretching bone-white nappa
-calf leather over a hand-carved beech shoe last with steel lasting pincers, on a worn wooden
-workbench in a dim Parisian atelier. Only the hands and the tool are visible, no face. Cool
-silver directional light raking across the pale leather grain, very dark charcoal background.
-Shot on a Sony A7R IV, 8k, shallow depth of field, no text, no logos. Vertical 4:5 composition.
+Close-up documentary photograph, shoemaker's atelier in Paris, natural window light from
+the left, dust in the air, muted desaturated palette, worn wooden workbench.
+Shot on 50mm, f/2, shallow depth of field. Hands and tools only — no faces.
+Grainy, filmic, unstyled. No logos, no text. Vertical 4:5 composition.
 ```
 
-**b) El cambrillón** — `atelier-cambrillon.png`
-```
-Ultra-detailed photorealistic macro photograph of a slender curved strip of polished tempered
-steel — a shoemaker's shank — resting on a worn wooden workbench beside an unfinished bone-white
-leather sole and a small steel hammer. The steel catches a hard specular highlight along its
-whole length. Very dark charcoal background, one cool directional light from the upper left,
-deep shadows. Shot on a Sony A7R IV, 8k, shallow depth of field, no hands, no people, no text,
-no logos. Vertical 4:5 composition.
-```
+Y el sujeto de cada una:
 
-**c) El forrado** — `atelier-forrado.png`
-```
-Ultra-detailed photorealistic macro photograph of an artisan's hands hand-stitching a bone-
-coloured leather lining into the inside of a pale couture pump with a curved needle and waxed
-linen thread, in a dim Parisian atelier. Only the hands, the needle and the shoe are visible,
-no face. Cool silver light raking across the leather, very dark charcoal background, deep rich
-shadows. Shot on a Sony A7R IV, 8k, shallow depth of field, no text, no logos. Vertical 4:5
-composition.
-```
+- **`atelier-montado.png`** — `Two hands stretching black patent leather over a hand-carved beech last with steel lasting pincers.`
+- **`atelier-cambrillon.png`** — `A slender curved strip of polished tempered steel resting on the bench beside an unfinished leather sole and a small steel hammer, catching a hard specular highlight along its whole length.`
+- **`atelier-canto.png`** — `A cotton pad applying ivory pigment to the edge of a leather sole, held in a wooden clamp, the ivory line building up against the black patent above.`
 
 ---
 
-## Variantes de material (si el hueso no te convence)
+## Variantes de material
 
-Cambia solo la línea del material en el prompt de la imagen y repite los clips. Cualquiera de
-estas mantiene el contraste que necesita el build:
+Cambia solo la línea del material en la imagen maestra y repite los clips.
 
-- **Poudre**: `pale powder-pink satin-finish nappa calf` — la más Dior de las tres.
-- **Plata líquida**: `pale liquid-silver metallic nappa calf` — la más fotogénica bajo la luz
-  de recorte, pero puede quemar altas luces; baja un punto la intensidad del rim light.
-- **Marfil seda**: `ivory silk duchesse satin` — precioso, pero el satén pierde el grano y con
-  poco detalle el zoom del hero se nota más.
+- **Charol negro** (el del prompt) — reflejo especular corto y definido, es la superficie
+  que mejor lee el gesto de la horma.
+- **Napa mate en nude** `#E3D5C3` — más suave, menos dramático, igual de couture.
 
-**No sirven** (rompen la medición por luminosidad y desaparecen sobre el fondo): negro mate,
-charol negro, burdeos oscuro, azul noche. Si quieres un zapato oscuro, hay que cambiar también
-el fondo del estudio a gris claro — y eso obliga a rehacer el esquema de color de toda la web.
+**No uses piel de pitón.** Lee como 2013; el charol liso y el nude leen como 2026. Si quieres
+textura, que sea grano de becerro, no escama. Y en cualquier caso: **nada de suela roja**
+(marca registrada de Louboutin) ni acolchado de rombos (*cannage*, firma de Dior).

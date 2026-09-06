@@ -327,7 +327,7 @@ const REF = path.join(ROOT, 'assets', 'source', 'product-ref.png')
 const CRAFT_SHOTS = [
   { out: 'craft-montado.webp',    at: 0.18, yAt: 0.45, zoom: 1.05, custom: 'atelier-montado' },
   { out: 'craft-cambrillon.webp', at: 0.52, yAt: 0.74, zoom: 0.62, custom: 'atelier-cambrillon' },
-  { out: 'craft-forrado.webp',    at: 0.78, yAt: 0.38, zoom: 0.85, custom: 'atelier-forrado' },
+  { out: 'craft-canto.webp',      at: 0.78, yAt: 0.86, zoom: 0.55, custom: 'atelier-canto' },
 ]
 const CRAFT_W = 720
 const CRAFT_H = 900

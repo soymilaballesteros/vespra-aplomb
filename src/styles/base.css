@@ -5,7 +5,7 @@
    scrub de ScrollTrigger y las secuencias van a tirones. El suavizado de los
    enlaces internos se hace en nav.ts, que sí respeta reduce-motion. */
 html {
-  color-scheme: dark;
+  color-scheme: light;
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
 }
@@ -27,10 +27,16 @@ img { height: auto; }
 a { color: inherit; text-decoration: none; }
 
 /* ── Grano ────────────────────────────────────────────────────
-   Un negro plano en pantalla se lee a "fondo de CSS"; con grano se lee a
-   fotografía. Es un SVG en línea (cero peticiones), fijo, sin eventos y con
-   `overlay` para que oscurezca los claros y aclare los oscuros en vez de
-   echar un velo gris encima. */
+   Un fondo plano en pantalla se lee a "color de CSS"; con grano se lee a
+   fotografía. Es un SVG en línea: cero peticiones, y fijo para que no se
+   arrastre con el scroll.
+
+   SIN `mix-blend-mode`, y no por gusto. Con `overlay` o `soft-light` la capa
+   tiene que mezclarse con todo lo que hay debajo, así que cada recálculo de
+   layout obliga a recomponer la pantalla entera. Sobre un documento con dos
+   secciones fijadas eso multiplicaba el coste de ScrollTrigger.refresh() por
+   ocho: 1.628 ms de bloqueo contra 167 ms. El velo neutro se nota bastante
+   menos que perder 40 puntos de PageSpeed. */
 body::after {
   content: '';
   position: fixed;
@@ -38,7 +44,6 @@ body::after {
   z-index: 100;
   pointer-events: none;
   opacity: 0.05;
-  mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 200px 200px;
 }
@@ -71,30 +76,20 @@ body::after {
 }
 
 /* ── Tipografía compartida ───────────────────────────────────── */
-/* Marcador de sección. No es un eyebrow decorativo sobre un titular: es el
-   encabezado de la sección, y debajo van los encabezados de sus elementos. */
-.seq__label {
-  font-size: 0.6875rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--accent);
-  font-weight: 500;
-}
-
 .section-title {
   font-family: var(--display);
   font-weight: 400;
   font-size: clamp(2.2rem, 5.4vw, 4.2rem);
-  /* No baja de 1.06: por debajo, el recorte del revelado por líneas se come
-     las tildes de "Anatomía" y "La colección". */
-  line-height: 1.06;
+  /* No baja de 1.14: por debajo, el recorte del revelado por líneas se come
+     las tildes de "Anatomía" y los rasgos descendentes de "El plano". */
+  line-height: 1.14;
   letter-spacing: -0.018em;
 }
 
 .lede {
   font-size: clamp(1.05rem, 1.5vw, 1.3rem);
   line-height: 1.55;
-  color: color-mix(in srgb, var(--fg) 76%, transparent);
+  color: var(--fg-2);
   max-width: 46ch;
 }
 
@@ -118,22 +113,26 @@ body::after {
 [data-js] .reveal.is-in { opacity: 1; transform: none; }
 
 /* Revelado por líneas: el canto que recorta lo pone `.line`, y `.line__in` sube
-   desde debajo. Las líneas las construye src/reveal.ts cuando las fuentes están
-   listas; hasta entonces el elemento es texto normal y se lee igual.
+   desde debajo. Las líneas las construye src/reveal.ts; hasta entonces el
+   elemento es texto normal y se lee igual.
 
-   El relleno inferior ensancha la caja de recorte para no cortar los rasgos
-   descendentes, y el margen negativo del mismo tamaño devuelve el espacio: el
-   bloque no cambia de alto. El desplazamiento va al 125% —no al 100%— porque la
-   caja de recorte es más alta que la línea y al 100% asomaría por abajo. */
+   `.line` NO lleva relleno ni margen. El intento anterior ensanchaba la caja de
+   recorte con un relleno y lo devolvía con un margen negativo, contando con que
+   el margen se colapsara a través del padre — y en la mitad de los titulares no
+   se colapsaba: el bloque crecía 11 px al partirse. Eso obliga a partir ANTES de
+   medir los pins, que es justo lo que hace cara la operación. Sin relleno, el
+   alto de N cajas de línea es el mismo partido que sin partir, y el partido
+   puede irse detrás del refresh.
+
+   A cambio, los elementos que se parten no pueden bajar de 1.14 de interlineado
+   o el recorte se come las tildes y los rasgos descendentes. */
 [data-js] .reveal-lines .line {
   display: block;
   overflow: hidden;
-  padding-bottom: 0.16em;
-  margin-bottom: -0.16em;
 }
 [data-js] .reveal-lines .line__in {
   display: block;
-  transform: translateY(125%);
+  transform: translateY(105%);
   transition: transform 1.05s var(--ease-reveal);
 }
 [data-js] .reveal-lines.is-in .line__in { transform: none; }

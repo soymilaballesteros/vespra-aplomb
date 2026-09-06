@@ -20,6 +20,8 @@
  */
 
 const STAGGER_MS = 90
+/** Por debajo de este ancho no se parte en líneas. */
+const NARROW = 700
 const originals = new WeakMap<HTMLElement, string>()
 
 const reduced = (): boolean =>
@@ -95,6 +97,11 @@ function writeLines(el: HTMLElement, words: string[], tops: number[]): void {
  */
 export function splitLines(): void {
   if (reduced()) return
+  // En pantalla estrecha no se parte, y no es solo por coste: un titular de dos
+  // palabras cabe en una línea, así que el efecto no se ve. Lo que sí se nota es
+  // lo que cuesta —partir fuerza layout, y con el hilo principal a un cuarto de
+  // velocidad son ~600 ms de bloqueo— para no enseñar nada.
+  if (window.innerWidth <= NARROW) return
   const items = Array.from(document.querySelectorAll<HTMLElement>('.reveal-lines'))
   if (!items.length) return
 

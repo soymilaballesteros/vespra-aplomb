@@ -1,11 +1,15 @@
-/* ── Secciones scroll-driven (canvas + secuencia de frames) ─── */
+/* ── Secciones scroll-driven (canvas + secuencia de frames) ───
+   El escenario es el propio ciclorama sobre el que está fotografiado el zapato:
+   gris perla, no negro. El color exacto lo pone el JS en --seq-bg leyéndolo del
+   manifest, que lo mide del clip; el gris de aquí solo cubre el instante
+   anterior a que eso ocurra.                                     */
 .seq { position: relative; }
 
 .seq__pin {
   position: relative;
   height: 100svh;
   overflow: hidden;
-  background: var(--ink);
+  background: var(--seq-bg, var(--pearl));
 }
 
 .seq__canvas,
@@ -27,108 +31,109 @@
 [data-js] .seq__still { display: none; }
 [data-js] .seq.is-static .seq__still { display: block; }
 
-/* Viñeteado: hunde los bordes para que el texto del overlay se lea
-   sin necesidad de una caja opaca encima del producto. */
+/* El texto se apoya sobre el set, y el set es claro. En vez de hundir la
+   imagen con un viñeteado —el recurso de las webs oscuras— la banda de la
+   izquierda sube hacia el tono del papel: el lado donde se lee pasa a ser
+   página y el lado donde está el zapato sigue siendo fotografía. */
 .seq__pin::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(to right, rgba(11,11,12,0.85) 0%, rgba(11,11,12,0) 42%),
-    linear-gradient(to top, rgba(11,11,12,0.75) 0%, rgba(11,11,12,0) 35%);
+  background: linear-gradient(to right,
+    rgba(232, 228, 220, 0.88) 0%,
+    rgba(232, 228, 220, 0.55) 22%,
+    rgba(232, 228, 220, 0) 48%);
 }
 
 .seq__ui {
   position: absolute;
   z-index: 2;
   left: var(--content-inset);
-  bottom: clamp(3rem, 9vh, 6rem);
   right: var(--content-edge);
+  top: 50%;
+  transform: translateY(-50%);
   display: grid;
-  gap: 0.85rem;
-  max-width: 34rem;
+  gap: 1.5rem;
+  max-width: 30rem;
 }
-.seq__title {
+.seq__heading {
   font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(2.6rem, 7vw, 5.5rem);
-  line-height: 0.95;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  font-variation-settings: 'opsz' var(--opsz-display);
+  font-size: clamp(2rem, 4.4vw, 3.2rem);
+  line-height: 1.04;
+  letter-spacing: -0.018em;
 }
-.seq__facts {
-  display: flex;
-  gap: clamp(1.5rem, 4vw, 3rem);
-  margin-top: 0.5rem;
-}
-.seq__facts dt {
-  font-size: 0.625rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--fg-2);
-  margin-bottom: 0.3rem;
-}
-.seq__facts dd { margin: 0; font-family: var(--display); font-size: 1.35rem; }
 
 .seq__hint {
   position: absolute;
   z-index: 2;
   right: var(--content-edge);
   bottom: clamp(3rem, 9vh, 6rem);
-  font-size: 0.625rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
   color: var(--fg-2);
   transition: opacity 0.6s var(--ease);
 }
 .seq.is-scrubbing .seq__hint { opacity: 0; }
 @media (max-width: 700px) { .seq__hint { display: none; } }
 
-/* ── Los 4 hitos del despiece ───────────────────────────────── */
+/* ── Los hitos del despiece ─────────────────────────────────── */
 .beats {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 .beat {
   display: grid;
   gap: 0.25rem;
   padding-left: 1.15rem;
   border-left: 1px solid transparent;
-  opacity: 0.28;
+  opacity: 0.3;
   transition: opacity 0.55s var(--ease), border-color 0.55s var(--ease);
 }
 .beat.is-on { opacity: 1; border-left-color: var(--accent); }
-.beat h3 { font-family: var(--display); font-weight: 500; font-size: clamp(1.35rem, 3vw, 2.1rem); line-height: 1.1; }
+.beat h3 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-variation-settings: 'opsz' 40;
+  font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+  line-height: 1.15;
+}
 .beat p { font-size: 0.9rem; color: var(--fg-2); max-width: 34ch; }
 @media (prefers-reduced-motion: reduce) { .beat { opacity: 1; } }
 
 /* ── Pantallas verticales ────────────────────────────────────
-   La zapatilla es ancha y baja. A pantalla completa en vertical, el ajuste
-   `cover` recortaría más del 60% del ancho y la dejaría sin talón ni puntera.
-   En vertical el canvas deja de ser a sangre y pasa a ser una banda con la
-   proporción real del fotograma (--seq-ratio, que fija el JS según el juego
+   Un salón de perfil es ancho y bajo. A pantalla completa en vertical, el
+   ajuste `cover` recortaría más del 60% del ancho y lo dejaría sin punta ni
+   tacón. En vertical el canvas deja de ser a sangre y pasa a ser una banda con
+   la proporción real del fotograma (--seq-ratio, que fija el JS según el juego
    activo), con los textos debajo. Es lo que hace Apple en móvil.            */
 @media (max-aspect-ratio: 1 / 1) {
   .seq:not(.hero) .seq__canvas,
   .seq:not(.hero) .seq__still {
     inset: auto 0 auto 0;
-    top: 11vh;
+    top: 10vh;
     height: auto;
     aspect-ratio: var(--seq-ratio, 1.25);
-    /* El fondo del clip (#040405) y el de la página (#0B0B0C) no son idénticos
-       y el estudio tiene un degradado: sin esto se ve el canto de la banda. */
-    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 9%, #000 88%, transparent);
-    mask-image: linear-gradient(to bottom, transparent, #000 9%, #000 88%, transparent);
   }
-  /* Sin imagen detrás del texto, el viñeteado ya no hace falta. */
+  /* Sin imagen detrás del texto, la banda de lectura ya no hace falta: el
+     degradado pasa a ser solo el asiento del texto, abajo. */
   .seq:not(.hero) .seq__pin::after {
-    background: linear-gradient(to top, rgba(11, 11, 12, 0.9) 0%, rgba(11, 11, 12, 0) 30%);
+    background: linear-gradient(to top,
+      rgba(232, 228, 220, 0.96) 0%,
+      rgba(232, 228, 220, 0.7) 24%,
+      rgba(232, 228, 220, 0) 46%);
   }
-  .seq__ui { bottom: clamp(2rem, 6vh, 4rem); }
-  .seq__title { font-size: clamp(2.2rem, 11vw, 3.4rem); }
+  .seq__ui {
+    top: auto;
+    bottom: clamp(2rem, 6vh, 4rem);
+    transform: none;
+    gap: 1.1rem;
+  }
 }
 
 /* Con reduce-motion o sin JS la sección no se fija: altura normal + imagen. */
@@ -145,9 +150,9 @@
   right: 12px;
   top: 12px;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.82);
-  border: 1px solid var(--rule-strong);
-  color: #AEB2B4;
+  background: rgba(11, 11, 13, 0.86);
+  border: 1px solid rgba(232, 228, 220, 0.28);
+  color: #C6C3BE;
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 11px;
   line-height: 1.5;

@@ -79,6 +79,27 @@ const CANVAS_HASH = `(sel) => {
   return (h >>> 0).toString(16)
 }`
 
+/**
+ * Espera a que una secuencia haya terminado de precargar.
+ *
+ * Sin esto, la comprobación de "objetivo == pintado" mide un estado transitorio
+ * perfectamente correcto: mientras la precarga avanza, el lienzo pinta a
+ * propósito el fotograma cargado más cercano para no quedarse en blanco. Lo que
+ * hay que verificar es el estado estable.
+ */
+async function waitLoaded(page, name) {
+  const ok = await page.evaluate(async (seqName) => {
+    const deadline = Date.now() + 45000
+    for (;;) {
+      const s = window.__seq().find((x) => x.name === seqName)
+      if (s && (s.loaded + s.failures) >= s.count) return true
+      if (Date.now() > deadline) return false
+      await new Promise((r) => setTimeout(r, 250))
+    }
+  }, name)
+  return ok
+}
+
 async function sequenceStops(page, id) {
   return page.evaluate(async ({ id, stops, hashFn }) => {
     const hash = eval(hashFn)
@@ -110,6 +131,18 @@ async function checkSequences(page, label) {
     [...document.querySelectorAll('.seq[data-seq]')].map((s) => s.id))
 
   for (const id of ids) {
+    const name = await page.evaluate((i) => document.getElementById(i).dataset.seq, id)
+    // Entrar EN la sección, no justo antes: el hero empieza en 0 y un
+    // scrollTo(0) no dispara evento de scroll, así que su fase fina —que espera
+    // al primer scroll a propósito— no arrancaría nunca y el test se colgaría
+    // esperando una precarga que el propio test ha impedido.
+    await page.evaluate((i) => {
+      const el = document.getElementById(i)
+      window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + 300)
+    }, id)
+    if (await waitLoaded(page, name)) ok(`${label} · ${id}: precarga completa`)
+    else bad(`${label} · ${id}: la precarga no terminó en 45 s`)
+
     const down = await sequenceStops(page, id)
     const hashes = down.map((s) => s.hash)
     const unique = new Set(hashes)
