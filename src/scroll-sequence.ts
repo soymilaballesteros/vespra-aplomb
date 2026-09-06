@@ -116,6 +116,27 @@ export interface ScrollSequenceOptions {
    * fotograma se encogería al 52% del ancho.
    */
   fill?: 'subject' | 'cover'
+  /**
+   * Si la sección se FIJA (por defecto) o el lienzo vive dentro de una columna
+   * `sticky` y el scrub recorre la altura natural de la sección. Es lo que usan
+   * el manifiesto, la ficha y la casa: el zapato acompaña al texto sin pin.
+   */
+  pinned?: boolean
+  /**
+   * Tramo del clip que recorre esta sección, en fracciones 0-1. Por defecto
+   * entero. Permite reutilizar los mismos fotogramas en varias secciones —el
+   * manifiesto gira un cuarto de vuelta, la casa cierra la vuelta— y al revés
+   * (`[1, 0]`: la ficha vuelve a montar el zapato). Solo se precargan los
+   * fotogramas del tramo.
+   */
+  range?: [number, number]
+  /**
+   * Qué fracción del lienzo ocupa el producto en apaisado (por defecto
+   * FILL_LANDSCAPE). El hero deja aire arriba para el titular; los duetos, que
+   * tienen el lienzo en una columna, lo llenan casi entero.
+   */
+  fillX?: number
+  fillY?: number
   onProgress?: (progress: number) => void
 }
 
@@ -131,6 +152,10 @@ export class ScrollSequence {
   private readonly focusLandscape: number
   private readonly focusX: number
   private readonly fillMode: 'subject' | 'cover'
+  private readonly pinned: boolean
+  private readonly range: [number, number]
+  private readonly fillX?: number
+  private readonly fillY?: number
   private readonly onProgress?: (p: number) => void
 
   private meta: SequenceMeta | undefined
@@ -155,6 +180,7 @@ export class ScrollSequence {
   private trigger?: ScrollTrigger
   private mq?: MediaQueryList
   private isStatic = false
+  private isPlaceholder = false
   progress = 0
 
   constructor(opts: ScrollSequenceOptions) {
@@ -165,6 +191,10 @@ export class ScrollSequence {
     this.focusLandscape = opts.focusLandscape ?? 0.5
     this.focusX = opts.focusX ?? 0.5
     this.fillMode = opts.fill ?? 'subject'
+    this.pinned = opts.pinned ?? true
+    this.range = opts.range ?? [0, 1]
+    this.fillX = opts.fillX
+    this.fillY = opts.fillY
     this.onProgress = opts.onProgress
 
     this.pin = this.section.querySelector<HTMLElement>('.seq__pin')!
@@ -183,6 +213,17 @@ export class ScrollSequence {
       const [r, g, b] = [1, 3, 5].map((i) => parseInt(bg.slice(i, i + 2), 16))
       this.fillClear = `rgba(${r}, ${g}, ${b}, 0)`
     }
+    // Sin pin el lienzo vive sobre el papel de la página, no sobre su propio
+    // escenario: el relleno y el fundido de cantos tienen que ser el color del
+    // papel, o el fotograma se lee como un rectángulo un punto más oscuro.
+    if (!this.pinned) {
+      const page = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
+      if (/^#[0-9a-f]{6}$/i.test(page)) {
+        this.fill = page
+        const [r, g, b] = [1, 3, 5].map((i) => parseInt(page.slice(i, i + 2), 16))
+        this.fillClear = `rgba(${r}, ${g}, ${b}, 0)`
+      }
+    }
     // El CSS lo necesita para pintar el escenario ANTES de que el lienzo tenga
     // nada: si no, se ve un destello del fondo de la página al entrar.
     this.section.style.setProperty('--seq-bg', this.fill)
@@ -191,10 +232,15 @@ export class ScrollSequence {
   init(): void {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    // Sin manifest, sin fotogramas todavía, sin canvas o con reduce-motion:
-    // imagen estática, sin pin, y sin pedir un solo fotograma.
-    if (!this.meta || !this.meta.frames || this.meta.placeholder || !this.ctx || reduced) {
+    // Sin manifest, sin canvas o con reduce-motion: imagen estática, sin pin.
+    if (!this.meta || !this.ctx || reduced) {
       this.goStatic()
+      return
+    }
+    // Material provisional: imagen estática, sin pedir un solo fotograma, pero
+    // conservando la coreografía del texto (pin e hitos) para poder revisarla.
+    if (!this.meta.frames || this.meta.placeholder) {
+      this.goPlaceholder()
       return
     }
 
@@ -302,10 +348,19 @@ export class ScrollSequence {
     await Promise.all(Array.from({ length: PRELOAD_CONCURRENCY }, worker))
   }
 
+  /** Índices de fotograma que cubre el tramo de esta sección. */
+  private wanted(): number[] {
+    const [a, b] = this.range
+    const lo = Math.max(0, Math.floor(Math.min(a, b) * (this.count - 1)))
+    const hi = Math.min(this.count - 1, Math.ceil(Math.max(a, b) * (this.count - 1)))
+    return Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)
+  }
+
   private async preload(): Promise<void> {
-    const all = Array.from({ length: this.count }, (_, i) => i)
+    const all = this.wanted()
     const coarse = all.filter((i) => i % COARSE_STEP === 0)
-    if (!coarse.includes(this.count - 1)) coarse.push(this.count - 1)
+    const last = all[all.length - 1]
+    if (!coarse.includes(last)) coarse.push(last)
 
     await this.runQueue(coarse)
 
@@ -391,8 +446,8 @@ export class ScrollSequence {
     const pw = Math.max(1, (sub.x1 - sub.x0) * iw)
     const ph = Math.max(1, (sub.y1 - sub.y0) * ih)
     const portrait = h > w
-    const fillX = portrait ? FILL_PORTRAIT.x : FILL_LANDSCAPE.x
-    const fillY = portrait ? FILL_PORTRAIT.y : FILL_LANDSCAPE.y
+    const fillX = portrait ? FILL_PORTRAIT.x : (this.fillX ?? FILL_LANDSCAPE.x)
+    const fillY = portrait ? FILL_PORTRAIT.y : (this.fillY ?? FILL_LANDSCAPE.y)
     const scale = this.fillMode === 'cover'
       ? Math.max(w / iw, h / ih)
       : Math.min((w * fillX) / pw, (h * fillY) / ph)
@@ -453,24 +508,50 @@ export class ScrollSequence {
   // ── Scroll ──────────────────────────────────────────────────
 
   private mount(): void {
+    const pinned = this.pinned
+    this.section.classList.add('is-pinned')
     this.trigger = ScrollTrigger.create({
       trigger: this.section,
-      start: 'top top',
-      end: () => `+=${Math.round((window.innerHeight * this.lengthVh) / 100)}`,
-      pin: this.pin,
-      pinSpacing: true,
-      anticipatePin: 1,
+      // Sin pin, el scrub recorre la sección desde que asoma por abajo hasta
+      // que se va por arriba: el zapato se mueve mientras el texto pasa.
+      start: pinned ? 'top top' : 'top 85%',
+      end: pinned
+        ? () => `+=${Math.round((window.innerHeight * this.lengthVh) / 100)}`
+        : 'bottom 15%',
+      pin: pinned ? this.pin : false,
+      pinSpacing: pinned,
+      anticipatePin: pinned ? 1 : 0,
       scrub: 0.5,
       invalidateOnRefresh: true,
       onUpdate: (self) => {
         this.progress = self.progress
-        const i = Math.round(self.progress * (this.count - 1))
-        this.target = Math.min(this.count - 1, Math.max(0, i))
-        this.requestPaint()
+        if (this.count > 0) {
+          const [a, b] = this.range
+          const f = a + self.progress * (b - a)
+          const i = Math.round(f * (this.count - 1))
+          this.target = Math.min(this.count - 1, Math.max(0, i))
+          this.requestPaint()
+        }
         this.onProgress?.(self.progress)
         if (self.progress > 0.02) this.section.classList.add('is-scrubbing')
       },
     })
+  }
+
+  /**
+   * Material provisional: la sección enseña su imagen de respaldo y no pide
+   * fotogramas, pero si tiene hitos (o está fijada por diseño) conserva el pin
+   * y el scrub para que el texto haga su coreografía. Así la web se puede
+   * revisar entera antes de que existan los clips.
+   */
+  private goPlaceholder(): void {
+    this.isStatic = true
+    this.isPlaceholder = true
+    this.count = 0
+    this.section.classList.add('is-static', 'is-placeholder')
+    if (this.still) this.still.hidden = false
+    const choreographed = this.pinned && this.section.querySelector('.beat') !== null
+    if (choreographed) this.mount()
   }
 
   private goStatic(): void {
@@ -486,6 +567,7 @@ export class ScrollSequence {
   // ── HUD ─────────────────────────────────────────────────────
 
   debugLine(): string {
+    if (this.isPlaceholder) return `${this.name.padEnd(8)} PROVISIONAL · ${(this.progress * 100).toFixed(1)}%`
     if (this.isStatic) return `${this.name.padEnd(8)} ESTÁTICO (fallback)`
     return (
       `${this.name.padEnd(8)} ${this.variant.padEnd(7)} ` +
@@ -500,6 +582,7 @@ export class ScrollSequence {
   debugState(): Record<string, unknown> {
     return {
       name: this.name,
+      id: this.section.id,
       variant: this.variant,
       frame: this.target + 1,
       count: this.count,
@@ -508,7 +591,9 @@ export class ScrollSequence {
       failures: this.failures,
       progress: Number(this.progress.toFixed(4)),
       static: this.isStatic,
-      placeholder: this.meta?.placeholder === true,
+      placeholder: this.isPlaceholder,
+      pinned: this.pinned,
+      wanted: this.count ? this.wanted().length : 0,
       coarseStep: COARSE_STEP,
     }
   }

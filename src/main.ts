@@ -17,6 +17,7 @@ import { initSpine } from './spine'
 import { initNav } from './nav'
 import { initPlan } from './plan'
 import { initDetail } from './detail'
+import { initCollection } from './collection'
 
 const sequences: ScrollSequence[] = []
 const landscape = window.matchMedia('(min-aspect-ratio: 1/1)')
@@ -34,13 +35,16 @@ function bindBeats(section: HTMLElement): (p: number) => void {
   if (!beats.length) return () => {}
   const timed = beats.some((b) => b.dataset.from !== undefined)
   const from = beats.map((b, n) => timed ? Number(b.dataset.from ?? 0) : n / beats.length)
+  // `data-beats="accumulate"`: los hitos se quedan encendidos al pasar (las
+  // notas del hero van apareciendo alrededor del zapato y no se van).
+  const accumulate = section.querySelector<HTMLElement>('.beats')?.dataset.beats === 'accumulate'
   let active = -2
   return (p: number) => {
     let i = -1
     for (let n = 0; n < from.length; n++) if (p >= from[n]) i = n
     if (i === active) return
     active = i
-    beats.forEach((b, n) => b.classList.toggle('is-on', n === i))
+    beats.forEach((b, n) => b.classList.toggle('is-on', accumulate ? n <= i : n === i))
   }
 }
 
@@ -51,6 +55,7 @@ function initSequences(): void {
     const lengthVh = Number(section.dataset.length) || 300
     const beats = bindBeats(section)
     const isHero = section.classList.contains('hero')
+    const range = section.dataset.range?.split(',').map(Number)
     const seq = new ScrollSequence({
       section,
       name,
@@ -59,14 +64,20 @@ function initSequences(): void {
       focusLandscape: Number(section.dataset.focus) || undefined,
       focusX: Number(section.dataset.focusX) || undefined,
       fill: section.dataset.fill === 'cover' ? 'cover' : 'subject',
+      pinned: section.dataset.pin !== 'none',
+      fillX: Number(section.dataset.fillX) || undefined,
+      fillY: Number(section.dataset.fillY) || undefined,
+      range: range && range.length === 2 && range.every((n) => !Number.isNaN(n))
+        ? [range[0], range[1]]
+        : undefined,
       onProgress: (p) => {
         beats(p)
-        // En apaisado el texto se retira entre el 15% y el 45% del giro y deja
-        // la pieza sola. En vertical NO: ahí el texto va debajo del producto,
-        // no lo tapa, y sin él media pantalla se queda vacía.
+        // En apaisado el titular se retira entre el 6% y el 26% del giro y deja
+        // la pieza sola para que entren las notas. En vertical NO: ahí el texto
+        // va debajo del producto, no lo tapa, y sin él media pantalla se queda vacía.
         if (isHero) {
           const fade = landscape.matches
-            ? 1 - Math.min(1, Math.max(0, (p - 0.15) / 0.3))
+            ? 1 - Math.min(1, Math.max(0, (p - 0.06) / 0.2))
             : 1
           section.style.setProperty('--hero-copy', fade.toFixed(3))
         }
@@ -99,6 +110,7 @@ initSpine()
 initReveal()
 initPlan()
 initDetail()
+initCollection()
 initForm()
 initSequences()
 initHud()

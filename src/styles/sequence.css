@@ -117,40 +117,80 @@
 @media (prefers-reduced-motion: reduce) { .beat { opacity: 1; } }
 
 /* ── Las notas del hero ──────────────────────────────────────────
-   Tres apuntes a la derecha del zapato que entran uno a uno conforme gira,
-   cuando el titular ya se ha retirado. Solo uno a la vez, y siempre en el
-   mismo sitio: por eso van apilados en absoluto y no en lista. */
+   Cuatro apuntes ALREDEDOR del zapato que entran uno a uno conforme gira,
+   cuando el titular ya se ha retirado, y se quedan. Cada uno tiene su sitio:
+   izquierda, derecha, abajo a la izquierda, abajo a la derecha. */
 .hero__notes {
   position: absolute;
   z-index: 2;
-  right: var(--content-edge);
-  top: 50%;
-  width: min(22rem, 34vw);
-  transform: translateY(-50%);
+  inset: 0;
   display: block;
+  pointer-events: none;
 }
 .hero__notes .beat {
   position: absolute;
-  inset-inline: 0;
-  top: 0;
-  transform: translateY(-50%) translateY(10px);
+  width: min(19rem, 26vw);
   opacity: 0;
-  padding-left: 0;
-  padding-right: 1.15rem;
-  border-left: 0;
-  border-right: 1px solid transparent;
-  text-align: right;
-  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease), border-color 0.7s var(--ease);
+  transform: translateY(12px);
+  padding: 0;
+  border: 0;
+  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
 }
-.hero__notes .beat.is-on {
-  opacity: 1;
-  transform: translateY(-50%);
-  border-right-color: var(--accent);
-}
-.hero__notes .beat p { margin-left: auto; }
-.hero__notes .beat h3 { font-size: clamp(1.5rem, 2.6vw, 2.1rem); }
-.hero.is-static .hero__notes { display: none; }
+.hero__notes .beat.is-on { opacity: 1; transform: none; }
+.hero__notes .beat h3 { font-size: clamp(1.4rem, 2.3vw, 1.9rem); }
+.hero__notes .beat p { max-width: 26ch; }
+/* El filete marca de qué lado del zapato cuelga cada nota. */
+.note--l, .note--bl { left: var(--content-inset); padding-left: 1.15rem; border-left: 1px solid var(--accent); }
+.note--r, .note--br { right: var(--content-edge); text-align: right; padding-right: 1.15rem; border-right: 1px solid var(--accent); }
+.note--r .beat p, .note--br p { margin-left: auto; }
+.note--l  { top: 44%; }
+.note--r  { top: 30%; }
+.note--bl { bottom: 11%; }
+.note--br { bottom: 11%; }
+.hero.is-static:not(.is-pinned) .hero__notes { display: none; }
 @media (max-aspect-ratio: 1 / 1) { .hero__notes { display: none; } }
+
+/* ── Duetos ───────────────────────────────────────────────────────
+   Texto a un lado y el zapato al otro, sin fijar la sección: la columna del
+   zapato es `sticky` y el scrub recorre la altura natural del texto. Es como
+   el zapato entra en las secciones que antes eran solo texto. */
+.duet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: start;
+}
+.duet__body { min-width: 0; }
+.duet__media {
+  position: sticky;
+  top: 9vh;
+  height: 82vh;
+  overflow: hidden;
+  background: transparent;
+}
+/* Especificidad a la altura de las reglas de "Estático" de más abajo, que si
+   no ganan y dejan el dueto en una caja 16:10 de 357 px. */
+.duet.seq .seq__pin,
+.duet.seq.is-static .seq__pin { height: 82vh; aspect-ratio: auto; background: transparent; }
+.duet.seq .seq__pin::after { display: none; }
+.duet.seq .seq__still,
+.duet.seq.is-static .seq__still { object-fit: contain; object-position: 50% 50%; }
+@media (max-aspect-ratio: 1 / 1) {
+  .duet { grid-template-columns: 1fr; gap: 1.5rem; }
+  .duet__media { position: static; height: auto; aspect-ratio: 1; order: -1; }
+  .duet.seq .seq__pin,
+  .duet.seq.is-static .seq__pin { height: auto; aspect-ratio: 1; padding: 0; }
+  .duet.seq .seq__canvas,
+  .duet.seq .seq__still,
+  .duet.seq.is-static .seq__still {
+    position: absolute;
+    inset: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+}
 
 /* ── Pantallas verticales ────────────────────────────────────
    Un salón de perfil es ancho y bajo. A pantalla completa en vertical, el

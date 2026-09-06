@@ -1,5 +1,6 @@
 import gsap from 'gsap'
 import ScrollTrigger from 'gsap/ScrollTrigger'
+import manifest from './frames.manifest.json'
 
 // Registrar aquí también: si no, este módulo depende del orden de los imports
 // de main.ts para que el plugin ya esté puesto. Registrar dos veces no cuesta.
@@ -32,6 +33,12 @@ export function initPlan(): void {
   if (!section) return
   const svg = section.querySelector<SVGSVGElement>('.plan__svg')
   if (!svg) return
+
+  // La piel: la foto de perfil detrás del dibujo. El alzado tiene el talón a la
+  // DERECHA; si el clip lo tiene a la izquierda, el build lo anota y se voltea.
+  const photo = section.querySelector<HTMLElement>('.plan__photo')
+  const profile = (manifest as { images?: { profile?: { flip?: boolean } } }).images?.profile
+  if (photo && profile?.flip) photo.classList.add('is-flipped')
 
   // Solo se mueven los TEXTOS entre encuadres, nunca los trazos: si cambiara
   // la geometría de un trazo habría que rearmar su dasharray y la animación se
@@ -80,7 +87,11 @@ export function initPlan(): void {
 
   // El estado por defecto del SVG es DIBUJADO. Esconderlo es lo que hace el JS,
   // así que con reduce-motion —o si este módulo fallara— el plano se ve entero.
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // Sin movimiento: la piel se queda como una sombra bajo el plano.
+    if (photo) photo.style.opacity = '0.14'
+    return
+  }
 
   // Cada trazo se esconde con su propia longitud. `getTotalLength()` es
   // geometría pura: no depende del layout y se puede pedir antes de pintar.
@@ -115,6 +126,9 @@ export function initPlan(): void {
 
     draw(ground, 0.35)
     tl.to(hint, { opacity: 1, duration: 0.6 }, '-=0.15')
+    // «Quítale la piel y queda esto»: la foto se disuelve mientras aparece la
+    // estructura, y se queda como una sombra muy leve.
+    if (photo) tl.to(photo, { opacity: 0.1, duration: 1.6, ease: 'none' }, 0.2)
     draw(outline, 1.1, 0.18)
     // El cambrillón entra solo y va más despacio: es el que hay que mirar.
     draw(shank, 1.2)

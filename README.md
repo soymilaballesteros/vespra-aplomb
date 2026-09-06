@@ -152,6 +152,27 @@ hay debajo (las marcas de la espina, por ejemplo).
 Encuadre por secuencia (`data-fill`): `subject` dimensiona el producto a una fracción del
 lienzo y rellena el resto con el crema del set (giro, despiece); `cover` llena el lienzo
 como `object-fit: cover` (el paso, donde la mujer recorre el encuadre entero).
+`data-fill-x` / `data-fill-y` ajustan esa fracción por sección.
+
+## El zapato en todas las secciones
+
+Los mismos fotogramas se reutilizan por tramos, sin fijar la sección (`data-pin="none"`,
+`data-range="a,b"`): la columna del zapato es `sticky` y el scrub recorre la altura del
+texto. Solo se precargan los fotogramas del tramo.
+
+- Manifiesto: giro, tramo 0.45→0.72 (un cuarto de vuelta).
+- Ficha técnica: despiece al revés, 1→0 (el zapato se monta mientras lees).
+- La casa: giro, tramo 0.72→1 (cierra la vuelta).
+- El plano: la foto de perfil (`still-profile.webp`, el fotograma más ancho del giro) se
+  disuelve mientras el dibujo se traza. Si el clip tiene el talón a la izquierda, el build
+  lo anota en `images.profile.flip` y `plan.ts` la voltea.
+- Colección: un solo zapato recortado del fondo (`still-profile-cut.webp`, por clave de
+  color) que cambia de piel con filtros CSS al señalar cada variante.
+- Hero: cuatro notas alrededor del zapato que entran con el giro (`data-from`) y se quedan
+  (`data-beats="accumulate"`).
+
+Con material provisional, las secciones con hitos (hero, anatomía) conservan el pin y la
+coreografía del texto sobre la foto de referencia.
 
 No se usa `scroll-behavior: smooth` en CSS: compite con el scrub de ScrollTrigger y hace
 que las secuencias vayan a tirones. El suavizado de los enlaces internos está en `src/nav.ts`.

@@ -144,13 +144,24 @@ async function measureSubject(input) {
 
   const colHit = new Array(W).fill(false)
   const rowHit = new Array(H).fill(false)
+  // Además, el fotograma en que el producto es MÁS ANCHO (el perfil, en un
+  // giro) y de qué lado tiene su punto más alto (el talón de un salón): de
+  // ahí sale el still de perfil y si hay que voltearlo bajo el plano.
+  let widest = { f: 0, w: -1, heelRight: true }
   for (let f = 0; f < frames; f++) {
+    let x0 = W, x1 = -1, topY = H, topX = 0
     for (let y = 0; y < H; y++) {
       const bg = bgAt(y)
       for (let x = 0; x < W; x++) {
-        if (Math.abs(at(f, x, y) - bg) > UMBRAL) { colHit[x] = true; rowHit[y] = true }
+        if (Math.abs(at(f, x, y) - bg) > UMBRAL) {
+          colHit[x] = true; rowHit[y] = true
+          if (x < x0) x0 = x
+          if (x > x1) x1 = x
+          if (y < topY) { topY = y; topX = x }
+        }
       }
     }
+    if (x1 - x0 > widest.w) widest = { f, w: x1 - x0, heelRight: topX > (x0 + x1) / 2 }
   }
 
   const first = (a) => { const i = a.indexOf(true); return i < 0 ? 0 : i }
@@ -166,6 +177,8 @@ async function measureSubject(input) {
       `que el set? Necesita separarse: luz de contorno, o un fondo de otro valor.`
     )
   }
+  box.widestAt = frames > 1 ? widest.f / (frames - 1) : 0
+  box.heelRight = widest.heelRight
   return box
 }
 
@@ -331,6 +344,8 @@ async function still(input, { at, crop, width, height, quality, out }) {
  * centro del encuadre: la IA no centra el producto de forma fiable.
  */
 const REF = path.join(ROOT, 'assets', 'source', 'product-ref.png')
+/** Lo rellena el giro al emitir el still de perfil; va al manifest (images.profile). */
+let profileMeta = null
 
 /**
  * Tres macros del producto. `at`/`yAt` los sitúan sobre la pieza y `zoom` fija
@@ -413,6 +428,30 @@ async function emitPageImages() {
     })
   }
   return { craft: { width: CRAFT_W, height: CRAFT_H } }
+}
+
+/**
+ * Un fotograma con el fondo del set eliminado por clave de color. Sirve para
+ * lo que se va a filtrar por CSS (la colección): un filtro sobre una imagen
+ * opaca tiñe también el fondo y deja un rectángulo. La similitud es baja a
+ * propósito: mejor que quede algo de sombra a que se coma el tacón.
+ */
+async function cutout(input, { at, crop, key, width, height, out }) {
+  const png = path.join(TMP, `cut-${path.basename(out, '.webp')}.png`)
+  await mkdir(TMP, { recursive: true })
+  const seek = at > 0 ? ['-ss', at.toFixed(3)] : []
+  await run('ffmpeg', [
+    '-hide_banner', '-loglevel', 'error', '-y', ...seek, '-i', input, '-frames:v', '1',
+    '-vf', `crop=${crop.width}:${crop.height}:${crop.x}:${crop.y},scale=${width}:${height}:flags=lanczos,` +
+      `format=rgba,colorkey=${key.replace('#', '0x')}:0.12:0.18`,
+    png,
+  ])
+  const dest = path.join(IMG_DIR, out)
+  await run('cwebp', ['-quiet', '-q', '84', '-m', '6', '-alpha_q', '90', png, '-o', dest])
+  await rm(png, { force: true })
+  EMITTED.set(out, { width, height })
+  const { size } = await stat(dest)
+  console.log(`   cutout ${out.padEnd(22)} ${width}x${height}  ${KB(size)} KB`)
 }
 
 /** Imagen de respaldo de cada secuencia, para reduce-motion o fallo de carga. */
@@ -537,7 +576,24 @@ async function buildSequence(seq) {
   await emitFallback(seq, meta, crops.desktop)
   const desktop = await buildVariant(seq, 'desktop', meta, crops.desktop, subject)
   const mobile = await buildVariant(seq, 'mobile', meta, crops.mobile, subject)
-  if (seq.name === 'rotate') await emitHeroPoster(seq, crops, desktop, mobile)
+  if (seq.name === 'rotate') {
+    await emitHeroPoster(seq, crops, desktop, mobile)
+    // El perfil: el fotograma más ancho del giro. Lo usan el plano (bajo el
+    // dibujo, volteado si el talón cae a la izquierda) y la colección.
+    const c = crops.desktop
+    await still(seq.inputAbs, {
+      at: subject.widestAt * meta.duration,
+      crop: `crop=${c.width}:${c.height}:${c.x}:${c.y}`,
+      width: desktop.width, height: desktop.height, quality: 84, out: 'still-profile.webp',
+    })
+    profileMeta = { width: desktop.width, height: desktop.height, flip: !subject.heelRight }
+    // Y el mismo perfil RECORTADO del fondo (alfa), para que la colección pueda
+    // teñirlo con filtros CSS sin que el ciclorama se tiña con él.
+    await cutout(seq.inputAbs, {
+      at: subject.widestAt * meta.duration, crop: c, key: background,
+      width: desktop.width, height: desktop.height, out: 'still-profile-cut.webp',
+    })
+  }
   await rm(path.join(TMP, seq.name), { recursive: true, force: true })
 
   if (desktop.count !== mobile.count) {
@@ -605,7 +661,8 @@ async function main() {
   // Cada secuencia construida sustituye entera su entrada del manifest, y con
   // ella la marca `placeholder` que deja el material provisional.
   for (const seq of list) manifest[seq.name] = await buildSequence(seq)
-  if (pageImages) manifest.images = pageImages
+  manifest.images = { ...(manifest.images || {}), ...(pageImages || {}) }
+  if (profileMeta) manifest.images.profile = profileMeta
 
   await mkdir(path.dirname(MANIFEST), { recursive: true })
   await writeFile(MANIFEST, JSON.stringify(manifest, null, 2) + '\n')

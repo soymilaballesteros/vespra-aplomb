@@ -38,7 +38,7 @@
   <!-- 1 ── HERO · la rotación 360° es el escenario, enganchada al scroll.
        Sin animación de entrada en el texto: lo primero que se pinta no se anima.
        Tres notas a la derecha entran una a una conforme gira (data-from). -->
-  <section class="hero seq" id="hero" data-seq="rotate" data-length="260" data-focus-x="0.66">
+  <section class="hero seq" id="hero" data-seq="rotate" data-length="280" data-focus="0.63" data-fill-x="0.7" data-fill-y="0.56">
     <div class="seq__pin hero__stage">
       <!-- El póster es el elemento LCP: se pinta sin esperar al JavaScript.
            Lleva el MISMO encuadre que los fotogramas de cada juego, y el JS lo
@@ -53,7 +53,7 @@
       <canvas class="seq__canvas" aria-hidden="true"></canvas>
 
       <div class="hero__copy">
-        <h1 class="hero__title">Nueve milímetros<br />tocan el suelo.</h1>
+        <h1 class="hero__title">Nueve milímetros tocan el suelo.</h1>
         <p class="lede">
           Ciento veinte milímetros de tacón y una tapa de nueve. Todo el peso
           del cuerpo pasa por ahí, y lo sostiene una lámina de acero que no
@@ -61,26 +61,36 @@
         </p>
       </div>
 
-      <ol class="beats hero__notes">
-        <li class="beat" data-from="0.3"><h3>Pitón natural</h3><p>Cada par sale de una sola piel, y ninguna se repite.</p></li>
-        <li class="beat" data-from="0.55"><h3>Ciento veinte</h3><p>El tacón más alto de la casa cabe entero en la palma de la mano.</p></li>
-        <li class="beat" data-from="0.8"><h3>Suela lacada</h3><p>Roja, y solo al andar.</p></li>
+      <!-- Las notas van apareciendo ALREDEDOR del zapato conforme gira, y se
+           quedan (data-beats="accumulate"). Cada una tiene su sitio. -->
+      <ol class="beats hero__notes" data-beats="accumulate">
+        <li class="beat note--l" data-from="0.3"><h3>Pitón natural</h3><p>Cada par sale de una sola piel, y ninguna se repite.</p></li>
+        <li class="beat note--r" data-from="0.55"><h3>Ciento veinte</h3><p>El tacón más alto de la casa cabe entero en la palma de la mano.</p></li>
+        <li class="beat note--bl" data-from="0.78"><h3>Suela lacada</h3><p>Roja, y solo al andar.</p></li>
+        <li class="beat note--br" data-from="0.92"><h3>Nueve milímetros</h3><p>La tapa. Todo el peso pasa por aquí.</p></li>
       </ol>
 
       <p class="seq__hint">Desplázate para girarlo</p>
     </div>
   </section>
 
-  <!-- 2 ── MANIFIESTO -->
-  <section class="manifesto" id="manifiesto">
-    <p class="manifesto__body reveal-lines">
-      No hacemos zapatos cómodos. Hacemos zapatos que no se notan,
-      que es otra cosa, y que cuesta cuatro años más de horma.
-    </p>
-    <p class="manifesto__body manifesto__body--quiet reveal-lines">
-      En la rue de Beaune salen ciento veinte pares al año.
-      El resto del tiempo se emplea en mirar.
-    </p>
+  <!-- 2 ── MANIFIESTO · el zapato gira despacio un cuarto de vuelta al lado
+       del texto: mismos fotogramas del giro (tramo 0.45→0.72), sin pin. -->
+  <section class="manifesto duet seq" id="manifiesto" data-seq="rotate" data-pin="none" data-range="0.45,0.72" data-fill-x="0.92" data-fill-y="0.82">
+    <div class="duet__body">
+      <p class="manifesto__body reveal-lines">
+        No hacemos zapatos cómodos. Hacemos zapatos que no se notan,
+        que es otra cosa, y que cuesta cuatro años más de horma.
+      </p>
+      <p class="manifesto__body manifesto__body--quiet reveal-lines">
+        En la rue de Beaune salen ciento veinte pares al año.
+        El resto del tiempo se emplea en mirar.
+      </p>
+    </div>
+    <div class="duet__media seq__pin">
+      <canvas class="seq__canvas" aria-hidden="true"></canvas>
+      <img class="seq__still" src="/img/fallback-rotate.webp" alt="El Aplomb visto desde atrás: el tacón de pitón y la suela lacada en rojo." width="730" height="730" loading="lazy" decoding="async" />
+    </div>
   </section>
 
   <!-- 3 ── EL PASO · la mujer cruza la pantalla al ritmo del scroll y a cada
@@ -113,6 +123,11 @@
     </div>
 
     <figure class="plan__draw" aria-labelledby="planoCap">
+      <div class="plan__stage">
+      <!-- La piel: la foto de perfil, que se va disolviendo conforme el
+           dibujo se traza. Si el clip tiene el talón a la izquierda, el
+           manifest lo dice (images.profile.flip) y plan.ts la voltea. -->
+      <img class="plan__photo" src="/img/still-profile.webp" alt="" width="730" height="730" loading="lazy" decoding="async" />
       <!-- Alzado a escala. Suelo en y=600, asiento del tacón en y=350:
            250 unidades = 120 mm, así que 1 mm ≈ 2,08 unidades. La tapa mide
            22 unidades ≈ 10 mm y el asiento 66 ≈ 32 mm.
@@ -158,6 +173,7 @@
         <path class="plan__dim" d="M 452 528 L 400 646 L 352 646" />
         <text class="plan__num plan__num--key plan__num--c" x="344" y="652" text-anchor="end">Cambrillón</text>
       </svg>
+      </div>
       <figcaption id="planoCap" class="plan__cap">
         La estructura del Aplomb: lo que sostiene el zapato, dibujado sin el zapato.
         En trazo de puntos, por dónde va la suela.
@@ -249,7 +265,8 @@
   </section>
 
   <!-- 8 ── FICHA TÉCNICA -->
-  <section class="spec" id="ficha">
+  <section class="spec duet seq" id="ficha" data-seq="explode" data-pin="none" data-range="1,0" data-fill-x="0.92" data-fill-y="0.82">
+    <div class="duet__body">
     <h2 class="section-title reveal-lines">Ficha técnica</h2>
     <dl class="spec__list">
       <div class="spec__row reveal"><dt>Horma</dt><dd>VP-12, tallada a mano en haya</dd></div>
@@ -265,10 +282,18 @@
       <div class="spec__row reveal"><dt>Edición</dt><dd>120 pares numerados</dd></div>
       <div class="spec__row reveal"><dt>Garantía</dt><dd>5 años · retapado de por vida</dd></div>
     </dl>
+    </div>
+    <!-- Mismos fotogramas del despiece, recorridos al revés: el zapato se va
+         montando mientras lees de qué está hecho. -->
+    <div class="duet__media seq__pin">
+      <canvas class="seq__canvas" aria-hidden="true"></canvas>
+      <img class="seq__still" src="/img/fallback-explode.webp" alt="El Aplomb montado, de tres cuartos." width="730" height="730" loading="lazy" decoding="async" />
+    </div>
   </section>
 
   <!-- 9 ── LA CASA -->
-  <section class="heritage" id="casa">
+  <section class="heritage duet seq" id="casa" data-seq="rotate" data-pin="none" data-range="0.72,1" data-fill-x="0.92" data-fill-y="0.82">
+    <div class="duet__body">
     <h2 class="section-title reveal-lines">Setenta y siete años</h2>
     <ol class="timeline">
       <li class="reveal"><span class="year">1949</span><p>Colette Vasseur abre un taller de zapatos de noche en la rue de Beaune, París.</p></li>
@@ -277,38 +302,53 @@
       <li class="reveal"><span class="year">2004</span><p>La tapa pasa a ser sustituible sin devolver el zapato al taller.</p></li>
       <li class="reveal"><span class="year">2026</span><p>Aplomb. Ciento veinte milímetros. Ciento veinte pares.</p></li>
     </ol>
+    </div>
+    <div class="duet__media seq__pin">
+      <canvas class="seq__canvas" aria-hidden="true"></canvas>
+      <img class="seq__still" src="/img/fallback-rotate.webp" alt="" width="730" height="730" loading="lazy" decoding="async" />
+    </div>
   </section>
 
   <!-- 10 ── COLECCIÓN · lista editorial, no tres tarjetas iguales.
         Al señalar una variante, las otras dos se retiran. -->
-  <section class="collection" id="coleccion">
+  <section class="collection duet" id="coleccion" data-look="rouge">
+    <div class="duet__body">
     <h2 class="section-title reveal-lines">La colección</h2>
     <ul class="editions">
-      <li class="edition reveal">
+      <li class="edition reveal" data-look="rouge">
         <h3 class="edition__name">Rouge</h3>
         <p class="edition__mat">Pitón natural, rojo sobre negro y crema</p>
         <p class="edition__note">La piel se tiñe escama a escama y el rojo cae donde la escama es más fina. Es el par que abre esta página.</p>
         <p class="edition__price">Precio bajo solicitud</p>
       </li>
-      <li class="edition reveal">
+      <li class="edition reveal" data-look="nuit">
         <h3 class="edition__name">Nuit</h3>
         <p class="edition__mat">Pitón teñido en negro, mate</p>
         <p class="edition__note">De lejos es un salón negro. De cerca, la escama sigue ahí y la suela roja es lo único que habla.</p>
         <p class="edition__price">Precio bajo solicitud</p>
       </li>
-      <li class="edition reveal">
+      <li class="edition reveal" data-look="sable">
         <h3 class="edition__name">Sable</h3>
         <p class="edition__mat">Pitón sin teñir, arena y hueso</p>
         <p class="edition__note">La piel tal como viene. Cada escama tiene su tono y no hay dos pares que se parezcan.</p>
         <p class="edition__price">Precio bajo solicitud</p>
       </li>
     </ul>
+    </div>
+    <!-- Un solo zapato para las tres: la piel cambia al señalar cada variante
+         (src/collection.ts pone data-look en la sección). -->
+    <figure class="duet__media collection__media">
+      <img class="collection__img" src="/img/still-profile-cut.webp" alt="El Aplomb de perfil en la piel de la variante señalada." width="730" height="730" loading="lazy" decoding="async" />
+    </figure>
   </section>
 
   <!-- 11 ── EDICIÓN LIMITADA + CITA -->
   <section class="request" id="cita">
-    <div class="request__num reveal">
-      <span class="request__n">001</span><span class="request__d">/120</span>
+    <div class="request__aside">
+      <div class="request__num reveal">
+        <span class="request__n">001</span><span class="request__d">/120</span>
+      </div>
+      <img class="request__img reveal" src="/img/hero-poster.webp" alt="" width="730" height="730" loading="lazy" decoding="async" />
     </div>
     <div class="request__body">
       <h2 class="section-title reveal-lines">Solicitar un par</h2>

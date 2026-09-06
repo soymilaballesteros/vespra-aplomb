@@ -3,21 +3,52 @@
     "frames": 0,
     "placeholder": true,
     "background": "#F1EAE0",
-    "desktop": { "count": 0, "width": 1920, "height": 1080 },
-    "mobile": { "count": 0, "width": 960, "height": 960 }
+    "desktop": {
+      "count": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "mobile": {
+      "count": 0,
+      "width": 960,
+      "height": 960
+    }
   },
   "walk": {
     "frames": 0,
     "placeholder": true,
     "background": "#F1EAE0",
-    "desktop": { "count": 0, "width": 1920, "height": 1080 },
-    "mobile": { "count": 0, "width": 960, "height": 540 }
+    "desktop": {
+      "count": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "mobile": {
+      "count": 0,
+      "width": 960,
+      "height": 540
+    }
   },
   "explode": {
     "frames": 0,
     "placeholder": true,
     "background": "#F1EAE0",
-    "desktop": { "count": 0, "width": 1920, "height": 1080 },
-    "mobile": { "count": 0, "width": 960, "height": 960 }
+    "desktop": {
+      "count": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "mobile": {
+      "count": 0,
+      "width": 960,
+      "height": 960
+    }
+  },
+  "images": {
+    "profile": {
+      "width": 730,
+      "height": 730,
+      "flip": true
+    }
   }
 }

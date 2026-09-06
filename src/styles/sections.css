@@ -16,6 +16,11 @@
 .hero__poster img {
   position: absolute;
   inset: 0;
+}
+/* El póster deja libre el tercio de arriba, que es donde vive el titular, y
+   se apoya abajo: es el mismo encuadre que dibuja luego el lienzo. */
+.hero__poster { inset: 33vh 0 3vh 0; }
+.hero__poster img {
   display: block;
   width: 100%;
   height: 100%;
@@ -23,9 +28,8 @@
      con el color del ciclorama. Si el póster recortara a cover, el relevo del
      <img> al <canvas> daría un salto de escala bien visible. */
   object-fit: contain;
-  /* A la derecha del todo: el texto vive a la izquierda y el talón del zapato
-     es lo primero que se encontraría. */
-  object-position: 100% 50%;
+  /* Centrado y algo bajo: el titular vive arriba, en el centro. */
+  object-position: 50% 62%;
 }
 
 /* El lienzo releva al póster en cuanto el JS ha dibujado en él el mismo
@@ -41,33 +45,37 @@
   z-index: 2;
   left: var(--content-inset);
   right: var(--content-edge);
-  top: 50%;
-  transform: translateY(-50%);
-  max-width: 29rem;
+  top: clamp(5.5rem, 12vh, 8rem);
   display: grid;
-  gap: 1.5rem;
+  justify-items: center;
+  text-align: center;
+  gap: 0.9rem;
   /* Se desvanece con el scroll (lo fija el JS) y deja la pieza limpia. */
   opacity: var(--hero-copy, 1);
 }
+.hero__copy .lede { max-width: 44ch; font-size: clamp(1rem, 1.25vw, 1.15rem); }
 
 .hero__title {
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(2.9rem, 7vw, 6rem);
-  line-height: 0.96;
-  letter-spacing: -0.024em;
+  font-size: clamp(2.4rem, 4.8vw, 4.4rem);
+  line-height: 1;
+  letter-spacing: -0.022em;
   text-wrap: balance;
+  max-width: 14ch;
 }
 
 @media (max-aspect-ratio: 1 / 1) {
   .hero__copy {
     top: auto;
     bottom: clamp(2rem, 6vh, 4rem);
-    transform: none;
+    justify-items: start;
+    text-align: left;
     gap: 1.1rem;
-    max-width: none;
   }
-  .hero__poster img { object-position: 50% 30%; }
+  .hero__title { max-width: none; font-size: clamp(2.6rem, 11vw, 4rem); }
+  .hero__poster { inset: 8vh 0 34vh 0; }
+  .hero__poster img { object-position: 50% 50%; }
 }
 
 
@@ -136,7 +144,7 @@
 
 
 /* ── 2 · MANIFIESTO ─────────────────────────────────────────── */
-.manifesto { display: grid; gap: 2.5rem; }
+.manifesto .duet__body { display: grid; gap: 2.5rem; align-self: center; min-height: 82vh; align-content: center; }
 .manifesto__body {
   font-family: var(--display);
   font-weight: 400;
@@ -163,13 +171,26 @@
 .plan__head { display: grid; gap: 1.25rem; max-width: 46rem; }
 
 .plan__draw { margin: 0; display: grid; gap: 1.25rem; justify-items: start; }
+.plan__stage { position: relative; width: 100%; max-width: 62rem; }
 .plan__svg {
+  position: relative;
   width: 100%;
-  max-width: 62rem;
   height: auto;
   /* Las cotas y los números viven fuera de la caja del zapato. */
   overflow: visible;
 }
+/* La piel, detrás del dibujo. Se coloca a ojo sobre el alzado (talón a la
+   derecha, suela en el suelo del dibujo) y se disuelve con el scroll. */
+.plan__photo {
+  position: absolute;
+  right: 13%;
+  bottom: 24%;
+  height: 76%;
+  width: auto;
+  max-width: none;
+  pointer-events: none;
+}
+.plan__photo.is-flipped { transform: scaleX(-1); }
 .plan__svg path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
 .plan__rule  { stroke: var(--rule-strong); stroke-width: 1; }
@@ -236,6 +257,8 @@
      línea de suela se sale del SVG y la corta el borde de la página, que queda
      más sucio que un corte limpio en el marco del dibujo. */
   .plan__svg { overflow: hidden; }
+  .plan__stage { overflow: hidden; }
+  .plan__photo { right: 6%; bottom: 26%; height: 70%; }
   .plan__num { font-size: 25px; letter-spacing: 0.1em; }
   .plan__line { stroke-width: 2.6; }
   .plan__shank { stroke-width: 7; }
@@ -300,6 +323,8 @@
 
 /* ── 5 · FICHA TÉCNICA ──────────────────────────────────────── */
 .spec { border-top: 1px solid var(--rule); }
+.spec .duet__media { top: 14vh; height: 72vh; }
+.spec .seq__pin { height: 72vh; }
 .spec__list { margin-top: clamp(2rem, 5vh, 3.5rem); max-width: 52rem; }
 .spec__row {
   display: grid;
@@ -344,9 +369,20 @@
 
 
 /* ── 7 · COLECCIÓN ───────────────────────────────────────────
-   Lista editorial, no tarjetas. Al señalar una variante las otras se retiran:
-   es la manera de mirar un muestrario, una pieza cada vez.          */
+   Lista editorial, no tarjetas. Al señalar una variante las otras se retiran
+   y el zapato de la derecha se viste con esa piel: es la manera de mirar un
+   muestrario, una pieza cada vez.                                    */
 .collection { border-top: 1px solid var(--rule); }
+.collection__media { margin: 0; display: grid; place-items: center; }
+.collection__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: filter 0.9s var(--ease);
+}
+.collection[data-look='nuit'] .collection__img { filter: grayscale(1) contrast(1.18) brightness(0.72); }
+.collection[data-look='sable'] .collection__img { filter: sepia(0.55) saturate(0.32) brightness(1.06) contrast(0.96); }
+.edition { cursor: default; outline-offset: -4px; }
 .editions {
   list-style: none;
   padding: 0;
@@ -355,18 +391,22 @@
 }
 .edition {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.65fr) minmax(0, 1.25fr) auto;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  grid-template-areas: 'name mat' 'name note' 'name price';
   gap: clamp(1.25rem, 3.5vw, 3rem);
   align-items: baseline;
   padding-block: clamp(1.6rem, 4vh, 2.6rem);
   border-bottom: 1px solid var(--rule);
 }
 .edition__name {
+  grid-area: name;
   font-family: var(--display);
   font-weight: 400;
   font-size: clamp(1.9rem, 4vw, 3rem);
   line-height: 1;
 }
+.edition__mat { grid-area: mat; }
+.edition__note { grid-area: note; }
 /* El material va en cursiva de la Didone, no en versalitas rastreadas: dice lo
    mismo y no viste de etiqueta algo que es descripción. */
 .edition__mat {
@@ -377,8 +417,8 @@
 }
 .edition__note { color: var(--fg-2); font-size: 0.975rem; line-height: 1.62; }
 .edition__price {
-  justify-self: end;
-  text-align: right;
+  grid-area: price;
+  margin-top: 0.4rem;
   font-size: 0.875rem;
   color: var(--fg-2);
   white-space: nowrap;
@@ -393,8 +433,7 @@
 }
 
 @media (max-width: 820px) {
-  .edition { grid-template-columns: 1fr; gap: 0.6rem; }
-  .edition__price { justify-self: start; text-align: left; margin-top: 0.4rem; }
+  .edition { grid-template-columns: 1fr; grid-template-areas: 'name' 'mat' 'note' 'price'; gap: 0.6rem; }
 }
 
 
@@ -406,7 +445,9 @@
   gap: clamp(2rem, 6vw, 5rem);
   align-items: start;
 }
+.request__aside { display: grid; gap: 2rem; }
 .request__num { font-family: var(--display); line-height: 0.86; letter-spacing: -0.03em; }
+.request__img { width: min(100%, 22rem); height: auto; }
 .request__n { font-size: clamp(4.5rem, 13vw, 10rem); font-variant-numeric: tabular-nums; }
 .request__d { font-size: clamp(1.5rem, 3.5vw, 2.75rem); color: var(--fg-2); }
 .request__body { display: grid; gap: 1.5rem; }

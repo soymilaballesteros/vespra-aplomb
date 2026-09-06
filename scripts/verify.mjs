@@ -89,16 +89,16 @@ const CANVAS_HASH = `(sel) => {
  * propósito el fotograma cargado más cercano para no quedarse en blanco. Lo que
  * hay que verificar es el estado estable.
  */
-async function waitLoaded(page, name) {
-  const ok = await page.evaluate(async (seqName) => {
+async function waitLoaded(page, id) {
+  const ok = await page.evaluate(async (sectionId) => {
     const deadline = Date.now() + 45000
     for (;;) {
-      const s = window.__seq().find((x) => x.name === seqName)
-      if (s && (s.loaded + s.failures) >= s.count) return true
+      const s = window.__seq().find((x) => x.id === sectionId)
+      if (s && (s.loaded + s.failures) >= (s.wanted || s.count)) return true
       if (Date.now() > deadline) return false
       await new Promise((r) => setTimeout(r, 250))
     }
-  }, name)
+  }, id)
   return ok
 }
 
@@ -107,13 +107,20 @@ async function sequenceStops(page, id) {
     const hash = eval(hashFn)
     const section = document.getElementById(id)
     const top = section.getBoundingClientRect().top + window.scrollY
-    const length = (Number(section.dataset.length) || 300) * window.innerHeight / 100
+    const vh = window.innerHeight
+    // Fijada: el recorrido es data-length. Sin pin: desde que asoma por abajo
+    // (top 85%) hasta que se va por arriba (bottom 15%), como en el runtime.
+    const pinned = section.dataset.pin !== 'none'
+    const start = pinned ? top : top - vh * 0.85
+    const length = pinned
+      ? (Number(section.dataset.length) || 300) * vh / 100
+      : section.offsetHeight - vh * 0.7
     const out = []
     for (const p of stops) {
-      window.scrollTo({ top: top + p * length, behavior: 'instant' })
+      window.scrollTo({ top: start + p * length, behavior: 'instant' })
       // El scrub es 0.5: hay que dejar que se asiente o se mide a medio camino.
       await new Promise((r) => setTimeout(r, 900))
-      const state = window.__seq().find((s) => s.name === section.dataset.seq)
+      const state = window.__seq().find((s) => s.id === id)
       out.push({
         p,
         hash: hash(`#${id} .seq__canvas`),
@@ -137,7 +144,7 @@ async function checkSequences(page, label) {
     // Material provisional (frames: 0 en el manifest): la sección es estática a
     // propósito y no hay animación que medir. Se avisa, no se falla: la web tiene
     // que poder revisarse antes de que existan los clips.
-    const state = await page.evaluate((n) => window.__seq().find((s) => s.name === n), name)
+    const state = await page.evaluate((i) => window.__seq().find((s) => s.id === i), id)
     if (state?.placeholder) {
       warn(`${label} · ${id}: MATERIAL PROVISIONAL — sin fotogramas, sección estática (falta el clip "${name}")`)
       continue
@@ -150,7 +157,7 @@ async function checkSequences(page, label) {
       const el = document.getElementById(i)
       window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + 300)
     }, id)
-    if (await waitLoaded(page, name)) ok(`${label} · ${id}: precarga completa`)
+    if (await waitLoaded(page, id)) ok(`${label} · ${id}: precarga completa`)
     else bad(`${label} · ${id}: la precarga no terminó en 45 s`)
 
     const down = await sequenceStops(page, id)
