@@ -56,17 +56,20 @@ function initSequences(): void {
         : undefined,
       onProgress: (p) => {
         beats(p)
-        // En apaisado el titular se retira entre el 6% y el 26% del giro y deja
-        // la pieza sola para que entren las notas. En vertical NO: ahí el texto
-        // va debajo del producto, no lo tapa, y sin él media pantalla se queda vacía.
+        // En apaisado el titular se retira entre el 4% y el 22% del giro y la
+        // primera nota entra justo al 22%: no hay tramo con el zapato solo. En
+        // vertical NO: ahí el texto va debajo del producto, no lo tapa, y sin
+        // él media pantalla se queda vacía.
         if (isHero) {
           const fade = landscape.matches
-            ? 1 - Math.min(1, Math.max(0, (p - 0.06) / 0.2))
+            ? 1 - Math.min(1, Math.max(0, (p - 0.04) / 0.18))
             : 1
           section.style.setProperty('--hero-copy', fade.toFixed(3))
           // Las dos líneas del titular se abren hacia los lados mientras se van.
-          const split = landscape.matches ? Math.min(1, Math.max(0, (p - 0.02) / 0.24)) : 0
+          const split = landscape.matches ? Math.min(1, Math.max(0, (p - 0.02) / 0.2)) : 0
           section.style.setProperty('--hero-split', (split * split).toFixed(4))
+          // Las palabras gigantes derivan unos píxeles con el giro (--hero-p).
+          section.style.setProperty('--hero-p', p.toFixed(4))
         }
       },
     })

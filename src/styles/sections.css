@@ -23,8 +23,9 @@
   object-fit: cover;
   object-position: 50% 50%;
 }
-/* Orden de capas: fondo (-1) → titular (0) → póster y lienzo (1) → segunda
-   línea, notas, suelo y entradilla (2). El zapato gira entre las dos líneas. */
+/* Orden de capas: fondo (-1) → titular y palabras gigantes (0) → póster y
+   lienzo (1) → segunda línea, notas, suelo y entradilla (2). El zapato gira
+   entre las dos líneas y pasa por delante de las palabras. */
 .hero .hero__poster, .hero .seq__canvas { z-index: 1; }
 .hero__copy { z-index: 0; }
 .hero__copy--front { z-index: 2; }
@@ -74,15 +75,16 @@
   will-change: transform, opacity;
   pointer-events: none;
 }
-/* La entradilla no va debajo del titular —caería sobre el zapato— sino abajo a
-   la izquierda, sobre el suelo, donde el zapato deja aire. Se va con el titular. */
+/* La entradilla no va debajo del titular —caería sobre el zapato— sino a la
+   izquierda y a media altura, donde el zapato de perfil deja aire (abajo a la
+   derecha caía sobre el tacón). Se va con el titular. */
 .hero__lede {
   position: absolute;
   z-index: 2;
-  right: var(--content-edge);
-  bottom: clamp(5.5rem, 12vh, 7.5rem);
-  max-width: 30ch;
-  text-align: right;
+  left: var(--content-inset);
+  top: 50%;
+  max-width: 24ch;
+  text-align: left;
   font-size: clamp(0.95rem, 1.15vw, 1.1rem);
   opacity: var(--hero-copy, 1);
   pointer-events: none;
@@ -108,6 +110,37 @@
 .hero__line { display: block; white-space: nowrap; will-change: transform; }
 .hero__line--a { transform: translateX(calc(var(--hero-split, 0) * -38vw)); }
 .hero__line--b { transform: translateX(calc(var(--hero-split, 0) * 38vw)); }
+
+/* Las palabras gigantes: una por nota, detrás del zapato, en tinta muy clara.
+   Entran con un barrido de abajo arriba (clip-path), como si las levantara
+   la línea roja del suelo, y se hunden igual cuando entra la siguiente. Con
+   el giro derivan unos píxeles (--hero-p) hacia fuera, cada lado al suyo. */
+.hero__words {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero__word {
+  position: absolute;
+  top: 50%;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(8rem, 24vw, 26rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--fg) 11%, transparent);
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 1.1s var(--ease-reveal);
+  will-change: clip-path, transform;
+}
+.hero__word.is-on { clip-path: inset(0 0 0 0); }
+/* Margen de 8vw y deriva de 4vw como mucho: la palabra nunca sale del encuadre. */
+.hero__word--l { left: 8vw; transform: translate(calc(var(--hero-p, 0) * -4vw), -50%); }
+.hero__word--r { right: 8vw; transform: translate(calc(var(--hero-p, 0) * 4vw), -50%); }
+.hero.is-static .hero__words { display: none; }
 
 /* El suelo: línea roja que se traza al cargar, con tres apuntes encima. */
 .hero__floor {
@@ -146,6 +179,7 @@
 @media (prefers-reduced-motion: reduce) {
   .hero__lede, .hero__floor-note, .hero__floor-line { animation: none; }
   .hero__line--a, .hero__line--b { transform: none; }
+  .hero__word { transition: none; }
 }
 
 @media (max-aspect-ratio: 1 / 1) {
@@ -163,10 +197,11 @@
   /* En vertical el titular va debajo del zapato, no detrás: la copia sobra. */
   .hero__copy--front { display: none; }
   .hero__title { font-size: clamp(2.6rem, 12vw, 4.6rem); justify-items: start; }
-  .hero__lede { bottom: clamp(2rem, 6vh, 4rem); left: var(--content-inset); right: var(--content-edge); max-width: 44ch; text-align: left; font-size: 1rem; }
+  .hero__lede { top: auto; bottom: clamp(2rem, 6vh, 4rem); left: var(--content-inset); right: var(--content-edge); max-width: 44ch; text-align: left; font-size: 1rem; }
   .hero__line { white-space: normal; }
   .hero__line--a, .hero__line--b { transform: none; }
   .hero__floor { display: none; }
+  .hero__words { display: none; }
   .hero__poster { inset: 8vh 0 38vh 0; }
   .hero__poster img { object-position: 50% 50%; }
 }

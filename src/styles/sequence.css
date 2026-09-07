@@ -118,8 +118,9 @@
 
 /* ── Las notas del hero ──────────────────────────────────────────
    Cuatro apuntes ALREDEDOR del zapato que entran uno a uno conforme gira,
-   cuando el titular ya se ha retirado, y se quedan. Cada uno tiene su sitio:
-   izquierda, derecha, abajo a la izquierda, abajo a la derecha. */
+   cuando el titular ya se ha retirado, y cada uno sustituye al anterior.
+   Cada uno tiene su sitio: izquierda, derecha, abajo a la izquierda, abajo a
+   la derecha, elegido para no pisar el zapato en su tramo del giro. */
 .hero__notes {
   position: absolute;
   z-index: 2;
@@ -131,13 +132,14 @@
   position: absolute;
   width: min(19rem, 26vw);
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(14px);
   padding: 0;
   border: 0;
-  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
 }
-.hero__notes .beat.is-on { opacity: 1; transform: none; }
-.hero__notes .beat h3 { font-size: clamp(1.4rem, 2.3vw, 1.9rem); }
+.hero__notes .beat.is-on { opacity: 1; transform: none; transition-delay: 0.25s; }
+/* Hasta 2rem: con más, «Nueve milímetros» (abajo a la derecha) llega al tacón. */
+.hero__notes .beat h3 { font-size: clamp(1.5rem, 2.4vw, 2rem); line-height: 1.05; }
 .hero__notes .beat p { max-width: 26ch; }
 /* El filete marca de qué lado del zapato cuelga cada nota. */
 .note--l, .note--bl { left: var(--content-inset); padding-left: 1.15rem; border-left: 1px solid var(--accent); }

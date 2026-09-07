@@ -69,21 +69,34 @@
       <div class="hero__copy hero__copy--front" aria-hidden="true">
         <p class="hero__title"><span class="hero__line hero__line--a hero__line--ghost">Nueve milímetros</span><span class="hero__line hero__line--b">tocan el suelo.</span></p>
       </div>
-      <!-- La entradilla va aparte, abajo a la izquierda, donde el zapato deja
-           aire; debajo del titular caería sobre el tacón. -->
+      <!-- La entradilla va aparte, a la izquierda y a media altura, donde el
+           zapato deja aire al cargar; abajo a la derecha caía sobre el tacón. -->
       <p class="lede hero__lede">
         Ciento veinte milímetros de tacón y una tapa de nueve. Todo el peso
         del cuerpo pasa por ahí, y lo sostiene una lámina de acero que no
         verás jamás.
       </p>
 
-      <!-- Las notas van apareciendo ALREDEDOR del zapato conforme gira, y se
-           quedan (data-beats="accumulate"). Cada una tiene su sitio. -->
-      <ol class="beats hero__notes" data-beats="accumulate">
-        <li class="beat note--l" data-from="0.3"><h3>Pitón natural</h3><p>Cada par sale de una sola piel, y ninguna se repite.</p></li>
-        <li class="beat note--r" data-from="0.55"><h3>Ciento veinte</h3><p>El tacón más alto de la casa cabe entero en la palma de la mano.</p></li>
-        <li class="beat note--bl" data-from="0.78"><h3>Suela lacada</h3><p>Roja, y solo al andar.</p></li>
-        <li class="beat note--br" data-from="0.92"><h3>Nueve milímetros</h3><p>La tapa. Todo el peso pasa por aquí.</p></li>
+      <!-- Las palabras GIGANTES: una por nota, detrás del zapato (capa 0,
+           como el titular), en tinta muy clara. Cada una sube con un barrido
+           desde el suelo cuando entra su nota y vuelve a hundirse cuando
+           entra la siguiente. Siguen el estado del hito con data-beat. -->
+      <div class="hero__words" aria-hidden="true">
+        <span class="beat-echo hero__word hero__word--l" data-beat="0">Pitón</span>
+        <span class="beat-echo hero__word hero__word--r" data-beat="1">120</span>
+        <span class="beat-echo hero__word hero__word--l" data-beat="2">Roja</span>
+        <span class="beat-echo hero__word hero__word--r" data-beat="3">9 mm</span>
+      </div>
+
+      <!-- Las notas entran una a una conforme gira y cada una SUSTITUYE a la
+           anterior: cada tramo del giro es una composición limpia (palabra
+           gigante, titular y frase). Alternan lado y van donde el zapato deja
+           aire en ese fotograma. -->
+      <ol class="beats hero__notes">
+        <li class="beat note--l" data-from="0.22"><h3>Pitón natural</h3><p>Cada par sale de una sola piel, y ninguna se repite.</p></li>
+        <li class="beat note--r" data-from="0.45"><h3>Ciento veinte</h3><p>El tacón más alto de la casa cabe entero en la palma de la mano.</p></li>
+        <li class="beat note--bl" data-from="0.68"><h3>Suela lacada</h3><p>Roja, y solo al andar.</p></li>
+        <li class="beat note--br" data-from="0.88"><h3>Nueve milímetros</h3><p>La tapa. Todo el peso pasa por aquí.</p></li>
       </ol>
 
       <!-- El suelo: una línea roja que se traza al cargar (no es el LCP), con
