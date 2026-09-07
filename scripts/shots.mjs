@@ -13,7 +13,7 @@ const proc = spawn('npx', ['vite', 'preview', '--port', '4174'], { cwd: ROOT, st
 const URL = 'http://localhost:4174'
 for (let i = 0; i < 60; i++) { try { if ((await fetch(URL)).ok) break } catch {} await new Promise(r => setTimeout(r, 300)) }
 const browser = await chromium.launch()
-const IDS = ['hero','manifiesto','paso','plano','atelier','anatomia','detalle','ficha','casa','coleccion','cita']
+const IDS = ['hero','paso','plano','atelier','anatomia','detalle','ficha','casa','coleccion','cita']
 for (const vp of [{ n: 'd', w: 1440, h: 900 }, { n: 'm', w: 390, h: 844 }]) {
   const page = await browser.newPage({ viewport: { width: vp.w, height: vp.h } })
   await page.goto(URL, { waitUntil: 'load' })

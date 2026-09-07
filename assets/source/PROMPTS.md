@@ -13,6 +13,11 @@ Orden: **1) imagen maestra → 2) giro → 3) paso → 4) despiece → 5) macro 
 6) atelier**. Los clips del giro y del despiece usan la MISMA imagen maestra como fotograma
 inicial (image-to-video): así es literalmente el mismo zapato en las dos animaciones.
 
+> **Estado (2026-09-06, noche):** están hechos 1, 2, 3, 5 y 6 y la web va con ellos. El
+> despiece (4) **no hace falta**: la Anatomía y la Ficha se resolvieron con la cámara sobre
+> fotos (`src/camera.ts`), que recorre la maestra, las vistas frontal y trasera del giro y la
+> foto del acero del atelier. El prompt se queda por si algún día se quiere el clip.
+
 ---
 
 ## Ajustes técnicos

@@ -112,11 +112,14 @@ export function initPlan(): void {
    * ScrollTrigger lo mide él solo y no entra en el refresh caro.
    */
   const build = (): void => {
+    // El recorrido es el carril (.plan__scroll): el pin se queda en pantalla
+    // de principio a fin y el trazado entero ocurre a la vista.
+    const rail = section.querySelector<HTMLElement>('.plan__scroll') ?? section
     const tl = gsap.timeline({
       scrollTrigger: {
-        trigger: svg,
-        start: 'top 82%',
-        end: 'bottom 72%',
+        trigger: rail,
+        start: 'top top',
+        end: 'bottom bottom',
         scrub: 0.6,
       },
     })

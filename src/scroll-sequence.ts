@@ -116,18 +116,19 @@ export interface ScrollSequenceOptions {
    * fotograma se encogería al 52% del ancho.
    */
   fill?: 'subject' | 'cover'
+  /** Encuadre en pantallas VERTICALES, si distinto. La casa: `cover`, para que el giro siga siendo fondo. */
+  fillPortrait?: 'subject' | 'cover'
   /**
    * Si la sección se FIJA (por defecto) o el lienzo vive dentro de una columna
-   * `sticky` y el scrub recorre la altura natural de la sección. Es lo que usan
-   * el manifiesto, la ficha y la casa: el zapato acompaña al texto sin pin.
+   * `sticky` y el scrub recorre la altura natural de la sección. Es lo que usa
+   * la casa: el zapato acompaña al texto sin pin.
    */
   pinned?: boolean
   /**
    * Tramo del clip que recorre esta sección, en fracciones 0-1. Por defecto
-   * entero. Permite reutilizar los mismos fotogramas en varias secciones —el
-   * manifiesto gira un cuarto de vuelta, la casa cierra la vuelta— y al revés
-   * (`[1, 0]`: la ficha vuelve a montar el zapato). Solo se precargan los
-   * fotogramas del tramo.
+   * entero. Permite reutilizar los mismos fotogramas en varias secciones —la
+   * casa cierra la vuelta con el tramo 0.72→1— y al revés (`[1, 0]`). Solo se
+   * precargan los fotogramas del tramo.
    */
   range?: [number, number]
   /**
@@ -137,6 +138,19 @@ export interface ScrollSequenceOptions {
    */
   fillX?: number
   fillY?: number
+  /**
+   * Sin pin, dónde empieza y acaba el scrub (sintaxis de ScrollTrigger). Por
+   * defecto 'top 85%' → 'bottom 15%' (los duetos). La casa, anclada con sticky,
+   * usa 'top top' → 'bottom bottom'; la cita, 'top 70%' → 'bottom bottom'.
+   */
+  start?: string
+  end?: string
+  /**
+   * Lienzo TRANSPARENTE: no rellena con el color del set ni funde cantos; lo que
+   * hay detrás (el papel, el titular) se ve alrededor del producto. Solo tiene
+   * sentido con fotogramas recortados (con alfa, `cut` en el build).
+   */
+  transparent?: boolean
   onProgress?: (progress: number) => void
 }
 
@@ -152,10 +166,14 @@ export class ScrollSequence {
   private readonly focusLandscape: number
   private readonly focusX: number
   private readonly fillMode: 'subject' | 'cover'
+  private readonly fillPortrait?: 'subject' | 'cover'
   private readonly pinned: boolean
   private readonly range: [number, number]
   private readonly fillX?: number
   private readonly fillY?: number
+  private readonly start?: string
+  private readonly end?: string
+  private readonly transparent: boolean
   private readonly onProgress?: (p: number) => void
 
   private meta: SequenceMeta | undefined
@@ -191,16 +209,20 @@ export class ScrollSequence {
     this.focusLandscape = opts.focusLandscape ?? 0.5
     this.focusX = opts.focusX ?? 0.5
     this.fillMode = opts.fill ?? 'subject'
+    this.fillPortrait = opts.fillPortrait
     this.pinned = opts.pinned ?? true
     this.range = opts.range ?? [0, 1]
     this.fillX = opts.fillX
     this.fillY = opts.fillY
+    this.start = opts.start
+    this.end = opts.end
+    this.transparent = opts.transparent ?? false
     this.onProgress = opts.onProgress
 
     this.pin = this.section.querySelector<HTMLElement>('.seq__pin')!
     this.canvas = this.section.querySelector<HTMLCanvasElement>('.seq__canvas')!
     this.still = this.section.querySelector<HTMLImageElement>('.seq__still')
-    this.ctx = this.canvas.getContext('2d', { alpha: false })
+    this.ctx = this.canvas.getContext('2d', { alpha: this.transparent })
 
     this.meta = MANIFEST[this.name]
 
@@ -226,7 +248,7 @@ export class ScrollSequence {
     }
     // El CSS lo necesita para pintar el escenario ANTES de que el lienzo tenga
     // nada: si no, se ve un destello del fondo de la página al entrar.
-    this.section.style.setProperty('--seq-bg', this.fill)
+    this.section.style.setProperty('--seq-bg', this.transparent ? 'transparent' : this.fill)
   }
 
   init(): void {
@@ -287,6 +309,10 @@ export class ScrollSequence {
     this.failures = 0
     this.drawn = -1
     this.sizeDirty = true
+    // El objetivo arranca en el principio del TRAMO, no en el fotograma 0:
+    // hasta que el scroll mueve el trigger no hay onUpdate, y una sección con
+    // tramo 0.45→0.72 pintaría (y declararía) el fotograma equivocado.
+    this.target = Math.min(this.count - 1, Math.max(0, Math.round(this.range[0] * (this.count - 1))))
   }
 
   private onVariantChange = (e: MediaQueryListEvent): void => {
@@ -448,7 +474,8 @@ export class ScrollSequence {
     const portrait = h > w
     const fillX = portrait ? FILL_PORTRAIT.x : (this.fillX ?? FILL_LANDSCAPE.x)
     const fillY = portrait ? FILL_PORTRAIT.y : (this.fillY ?? FILL_LANDSCAPE.y)
-    const scale = this.fillMode === 'cover'
+    const mode = portrait && this.fillPortrait ? this.fillPortrait : this.fillMode
+    const scale = mode === 'cover'
       ? Math.max(w / iw, h / ih)
       : Math.min((w * fillX) / pw, (h * fillY) / ph)
     const dw = iw * scale
@@ -465,6 +492,12 @@ export class ScrollSequence {
     const dx = dw >= w ? Math.min(0, Math.max(w - dw, w * focusX - cx)) : w * focusX - cx
     const dy = dh >= h ? Math.min(0, Math.max(h - dh, h * focusY - cy)) : h * focusY - cy
 
+    if (this.transparent) {
+      // Fotogramas con alfa sobre lienzo transparente: ni relleno ni fundidos.
+      ctx.clearRect(0, 0, w, h)
+      ctx.drawImage(img, dx, dy, dw, dh)
+      return
+    }
     const FILL = this.fill
     ctx.fillStyle = FILL
     ctx.fillRect(0, 0, w, h)
@@ -514,10 +547,10 @@ export class ScrollSequence {
       trigger: this.section,
       // Sin pin, el scrub recorre la sección desde que asoma por abajo hasta
       // que se va por arriba: el zapato se mueve mientras el texto pasa.
-      start: pinned ? 'top top' : 'top 85%',
+      start: pinned ? 'top top' : (this.start ?? 'top 85%'),
       end: pinned
         ? () => `+=${Math.round((window.innerHeight * this.lengthVh) / 100)}`
-        : 'bottom 15%',
+        : (this.end ?? 'bottom 15%'),
       pin: pinned ? this.pin : false,
       pinSpacing: pinned,
       anticipatePin: pinned ? 1 : 0,

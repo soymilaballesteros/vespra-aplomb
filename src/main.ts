@@ -17,36 +17,15 @@ import { initSpine } from './spine'
 import { initNav } from './nav'
 import { initPlan } from './plan'
 import { initDetail } from './detail'
+import { initAtelier } from './atelier'
+import { initHeritage } from './heritage'
 import { initCollection } from './collection'
+import { bindBeats } from './beats'
+import { Camera, initCameras } from './camera'
 
 const sequences: ScrollSequence[] = []
+let cameras: Camera[] = []
 const landscape = window.matchMedia('(min-aspect-ratio: 1/1)')
-
-/**
- * Enciende el hito que corresponde al progreso.
- *
- * Por defecto los hitos se reparten el recorrido a partes iguales. Si alguno
- * lleva `data-from` (fracción 0-1 en la que entra), manda eso: el hero lo usa
- * para que las notas laterales no aparezcan hasta que el texto se ha retirado.
- * Antes del primer `data-from` no hay ninguno encendido.
- */
-function bindBeats(section: HTMLElement): (p: number) => void {
-  const beats = Array.from(section.querySelectorAll<HTMLElement>('.beat'))
-  if (!beats.length) return () => {}
-  const timed = beats.some((b) => b.dataset.from !== undefined)
-  const from = beats.map((b, n) => timed ? Number(b.dataset.from ?? 0) : n / beats.length)
-  // `data-beats="accumulate"`: los hitos se quedan encendidos al pasar (las
-  // notas del hero van apareciendo alrededor del zapato y no se van).
-  const accumulate = section.querySelector<HTMLElement>('.beats')?.dataset.beats === 'accumulate'
-  let active = -2
-  return (p: number) => {
-    let i = -1
-    for (let n = 0; n < from.length; n++) if (p >= from[n]) i = n
-    if (i === active) return
-    active = i
-    beats.forEach((b, n) => b.classList.toggle('is-on', accumulate ? n <= i : n === i))
-  }
-}
 
 function initSequences(): void {
   const sections = document.querySelectorAll<HTMLElement>('.seq[data-seq]')
@@ -64,9 +43,14 @@ function initSequences(): void {
       focusLandscape: Number(section.dataset.focus) || undefined,
       focusX: Number(section.dataset.focusX) || undefined,
       fill: section.dataset.fill === 'cover' ? 'cover' : 'subject',
+      fillPortrait: section.dataset.fillPortrait === 'cover' ? 'cover'
+        : section.dataset.fillPortrait === 'subject' ? 'subject' : undefined,
       pinned: section.dataset.pin !== 'none',
       fillX: Number(section.dataset.fillX) || undefined,
       fillY: Number(section.dataset.fillY) || undefined,
+      start: section.dataset.start,
+      end: section.dataset.end,
+      transparent: section.dataset.transparent !== undefined,
       range: range && range.length === 2 && range.every((n) => !Number.isNaN(n))
         ? [range[0], range[1]]
         : undefined,
@@ -80,12 +64,39 @@ function initSequences(): void {
             ? 1 - Math.min(1, Math.max(0, (p - 0.06) / 0.2))
             : 1
           section.style.setProperty('--hero-copy', fade.toFixed(3))
+          // Las dos líneas del titular se abren hacia los lados mientras se van.
+          const split = landscape.matches ? Math.min(1, Math.max(0, (p - 0.02) / 0.24)) : 0
+          section.style.setProperty('--hero-split', (split * split).toFixed(4))
         }
       },
     })
     seq.init()
     sequences.push(seq)
   }
+}
+
+/**
+ * El ratón mueve unos píxeles el titular del hero (--mx/--my en -1..1). Solo
+ * con puntero fino y sin reduce-motion; es un gesto, no una animación.
+ */
+function initHeroParallax(): void {
+  const hero = document.getElementById('hero')
+  if (!hero) return
+  if (!window.matchMedia('(pointer: fine)').matches) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  let raf = 0
+  let mx = 0
+  let my = 0
+  hero.addEventListener('pointermove', (e) => {
+    mx = (e.clientX / window.innerWidth) * 2 - 1
+    my = (e.clientY / window.innerHeight) * 2 - 1
+    if (raf) return
+    raf = requestAnimationFrame(() => {
+      raf = 0
+      hero.style.setProperty('--mx', mx.toFixed(3))
+      hero.style.setProperty('--my', my.toFixed(3))
+    })
+  }, { passive: true })
 }
 
 function initHud(): void {
@@ -110,9 +121,14 @@ initSpine()
 initReveal()
 initPlan()
 initDetail()
+initAtelier()
+initHeritage()
 initCollection()
 initForm()
 initSequences()
+// La cámara sobre fotos (anatomía, ficha): mismos hitos, otra fuente.
+cameras = initCameras(bindBeats)
+initHeroParallax()
 initHud()
 
 /**
@@ -155,6 +171,10 @@ refreshOnce()
 
 // Puente para la verificación automatizada en navegador.
 declare global {
-  interface Window { __seq?: () => Record<string, unknown>[] }
+  interface Window {
+    __seq?: () => Record<string, unknown>[]
+    __cam?: () => Record<string, unknown>[]
+  }
 }
 window.__seq = () => sequences.map((s) => s.debugState())
+window.__cam = () => cameras.map((c) => c.debugState())

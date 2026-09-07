@@ -59,7 +59,7 @@ body::after {
    para que aguanten a 16 px; a 100 px hay que pedirle el corte de display o
    los finos salen romos y se pierde el contraste que define a una Didone.
    Solo se declara `opsz`: `wght` sigue viniendo de font-weight.  */
-.hero__title, .section-title, .seq__heading, .detail__title, .manifesto__body,
+.hero__title, .section-title, .seq__heading, .detail__title,
 .year, .request__n, .plan__figure {
   font-variation-settings: 'opsz' var(--opsz-display);
 }
@@ -96,11 +96,15 @@ body::after {
 /* ── Contenedor ─────────────────────────────────────────────── */
 /* El hero queda fuera: ahora es un escenario a sangre y su texto se posiciona
    por su cuenta dentro del pin. Con este relleno el lienzo no llegaba al borde. */
-.manifesto, .plan, .atelier, .spec, .heritage, .collection, .request, .footer {
+/* El atelier tampoco: sus paneles van a sangre y el raíl lo llevan su cabecera
+   y el texto de cada panel por su cuenta. */
+/* Ficha, casa, colección y cita van a sangre: el raíl lo llevan sus columnas
+   de texto por su cuenta. */
+.plan, .footer {
   padding-left: var(--content-inset);
   padding-right: var(--content-edge);
 }
-.manifesto, .plan, .atelier, .spec, .heritage, .collection, .request {
+.plan {
   padding-block: var(--pad-section);
 }
 

@@ -15,7 +15,6 @@ interface SectionSpec {
 }
 
 const SECTIONS: SectionSpec[] = [
-  { id: 'manifiesto', name: 'Manifiesto' },
   { id: 'paso', name: 'El paso' },
   { id: 'plano', name: 'El plano' },
   { id: 'atelier', name: 'Atelier' },

@@ -109,12 +109,21 @@ async function sequenceStops(page, id) {
     const top = section.getBoundingClientRect().top + window.scrollY
     const vh = window.innerHeight
     // Fijada: el recorrido es data-length. Sin pin: desde que asoma por abajo
-    // (top 85%) hasta que se va por arriba (bottom 15%), como en el runtime.
+    // (top 85%) hasta que se va por arriba (bottom 15%), como en el runtime:
+    // el recorrido es la altura de la sección MÁS el 70% del viewport.
     const pinned = section.dataset.pin !== 'none'
-    const start = pinned ? top : top - vh * 0.85
+    // 'top 85%' / 'bottom bottom' / 'top top'…: posición de scroll en la que el
+    // canto de la sección toca esa referencia del viewport.
+    const at = (spec) => {
+      const [edge, ref] = spec.split(/\s+/)
+      const e = top + (edge === 'bottom' ? section.offsetHeight : 0)
+      const r = ref === 'top' ? 0 : ref === 'bottom' ? 1 : parseFloat(ref) / 100
+      return e - vh * r
+    }
+    const start = pinned ? top : at(section.dataset.start || 'top 85%')
     const length = pinned
       ? (Number(section.dataset.length) || 300) * vh / 100
-      : section.offsetHeight - vh * 0.7
+      : at(section.dataset.end || 'bottom 15%') - start
     const out = []
     for (const p of stops) {
       window.scrollTo({ top: start + p * length, behavior: 'instant' })
@@ -184,11 +193,51 @@ async function checkSequences(page, label) {
   }
 }
 
+// ── A2 · la cámara sobre fotos se mueve ─────────────────────────────────
+/**
+ * Anatomía y ficha no pintan en un lienzo: mueven fotos con `transform`. Lo
+ * que se comprueba es lo mismo —que en cinco puntos del recorrido se ve algo
+ * distinto— pero la huella es el plano activo más su transform.
+ */
+async function checkCameras(page, label) {
+  const ids = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-cam]')].map((c) => c.closest('section')?.id ?? ''))
+  for (const id of ids) {
+    if (!id) continue
+    const stops = await page.evaluate(async ({ id, stops }) => {
+      const section = document.getElementById(id)
+      const cam = section.querySelector('[data-cam]')
+      const top = section.getBoundingClientRect().top + window.scrollY
+      const vh = window.innerHeight
+      // Igual que el runtime: sin altura de sobra, la cámara va en flujo.
+      const flow = cam.dataset.camScroll === 'flow' || section.offsetHeight < vh * 1.2
+      const start = flow ? top - vh * 0.85 : top
+      const length = flow ? section.offsetHeight + vh * 0.7 : section.offsetHeight - vh
+      const out = []
+      for (const p of stops) {
+        window.scrollTo({ top: start + p * length, behavior: 'instant' })
+        await new Promise((r) => setTimeout(r, 900))
+        const st = window.__cam().find((c) => c.id === id)
+        out.push({ p, key: `${st.shot}:${st.transform}`, progress: st.progress, shot: st.shot, shots: st.shots })
+      }
+      return out
+    }, { id, stops: STOPS })
+    const unique = new Set(stops.map((s) => s.key))
+    if (unique.size === STOPS.length) ok(`${label} · ${id}: la cámara pasa por ${unique.size}/5 encuadres distintos`)
+    else bad(`${label} · ${id}: solo ${unique.size}/5 encuadres distintos — la cámara no se mueve`)
+    const drift = stops.filter((s) => Math.abs(s.progress - s.p) > 0.06)
+    if (drift.length) bad(`${label} · ${id}: el progreso no llega a donde se le pide (${drift.map((s) => `${s.p}→${s.progress}`).join(', ')})`)
+    const last = stops.at(-1)
+    if (last.shot === last.shots) ok(`${label} · ${id}: al final está en el último plano (${last.shot}/${last.shots})`)
+    else bad(`${label} · ${id}: al final está en el plano ${last.shot} de ${last.shots}`)
+  }
+}
+
 // ── C · márgenes y zonas táctiles ───────────────────────────────────────
 async function checkLayout(page, label, narrow) {
   const r = await page.evaluate(() => {
     const vw = document.documentElement.clientWidth
-    const blocks = ['.manifesto', '.plan', '.atelier', '.spec', '.heritage', '.collection', '.request', '.footer']
+    const blocks = ['.plan', '.footer']
     // Se mide el RELLENO de la sección, no la caja del primer hijo: casi todos
     // los bloques llevan su propia medida máxima (max-width) y comparar su borde
     // derecho con el del viewport daba desigualdades que no existen.
@@ -325,6 +374,7 @@ async function runViewport(browser, vp) {
   scrolled = true
   await checkLayout(page, vp.name, vp.width <= 700)
   await checkSequences(page, vp.name)
+  await checkCameras(page, vp.name)
 
   // Barrido de arriba abajo: sin esto, las imágenes con loading="lazy" que
   // nunca entran en pantalla no se piden y un 404 suyo pasaría desapercibido.
@@ -391,6 +441,11 @@ async function runReducedMotion(browser) {
 
   if (frames === 0) ok('cero fotogramas descargados')
   else bad(`${frames} fotogramas descargados pese a reduce-motion`)
+
+  const cams = await page.evaluate(() => window.__cam())
+  const moving = cams.filter((c) => !c.static)
+  if (!moving.length) ok(`las ${cams.length} cámaras sobre fotos pasan a estática`)
+  else bad(`${moving.length} cámaras siguen en marcha: ${moving.map((c) => c.id).join(', ')}`)
 
   const stills = await page.evaluate(() =>
     [...document.querySelectorAll('.seq__still')]

@@ -1,54 +1,94 @@
 {
   "rotate": {
-    "frames": 0,
-    "placeholder": true,
-    "background": "#F1EAE0",
+    "frames": 160,
+    "background": "#ede7d9",
+    "cut": true,
     "desktop": {
-      "count": 0,
+      "count": 160,
       "width": 1920,
-      "height": 1080
+      "height": 1068,
+      "quality": 82,
+      "bytes": 8788774,
+      "avg": 54929.8375,
+      "max": 76238,
+      "subject": {
+        "x0": 0.16145833333333334,
+        "x1": 0.875,
+        "y0": 0.037037037037037035,
+        "y1": 0.9814814814814816
+      }
     },
     "mobile": {
-      "count": 0,
+      "count": 160,
       "width": 960,
-      "height": 960
+      "height": 534,
+      "quality": 82,
+      "bytes": 3745808,
+      "avg": 23411.3,
+      "max": 31856,
+      "subject": {
+        "x0": 0.16145833333333334,
+        "x1": 0.875,
+        "y0": 0.037037037037037035,
+        "y1": 0.9814814814814816
+      }
     }
   },
   "walk": {
-    "frames": 0,
-    "placeholder": true,
-    "background": "#F1EAE0",
+    "frames": 160,
+    "background": "#ece5da",
     "desktop": {
-      "count": 0,
+      "count": 160,
       "width": 1920,
-      "height": 1080
+      "height": 1080,
+      "quality": 82,
+      "bytes": 4073656,
+      "avg": 25460.35,
+      "max": 32514,
+      "subject": {
+        "x0": 0.16145833333333334,
+        "x1": 0.9947916666666666,
+        "y0": 0,
+        "y1": 0.8888888888888888
+      }
     },
     "mobile": {
-      "count": 0,
+      "count": 160,
       "width": 960,
-      "height": 540
-    }
-  },
-  "explode": {
-    "frames": 0,
-    "placeholder": true,
-    "background": "#F1EAE0",
-    "desktop": {
-      "count": 0,
-      "width": 1920,
-      "height": 1080
-    },
-    "mobile": {
-      "count": 0,
-      "width": 960,
-      "height": 960
+      "height": 540,
+      "quality": 82,
+      "bytes": 1527290,
+      "avg": 9545.5625,
+      "max": 12674,
+      "subject": {
+        "x0": 0.16145833333333334,
+        "x1": 0.9947916666666666,
+        "y0": 0,
+        "y1": 0.8888888888888888
+      }
     }
   },
   "images": {
     "profile": {
-      "width": 730,
-      "height": 730,
-      "flip": true
+      "width": 1920,
+      "height": 1068,
+      "flip": false
+    },
+    "craft": {
+      "width": 1440,
+      "height": 1800
+    },
+    "studio": "#f0e8db",
+    "ref": {
+      "width": 1920,
+      "height": 1072,
+      "heelRight": true,
+      "subject": {
+        "x0": 0.16666666666666666,
+        "x1": 0.828125,
+        "y0": 0.0462962962962963,
+        "y1": 0.9351851851851852
+      }
     }
   }
 }

@@ -16,7 +16,7 @@
  * Si un juego se pasa de presupuesto, baja la calidad y, si hace falta, el ancho,
  * reintentando automáticamente. Solo falla si ni el suelo cumple.
  */
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 import { mkdir, rm, readdir, stat, writeFile, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
@@ -41,9 +41,16 @@ const MANIFEST = path.join(ROOT, 'src', 'frames.manifest.json')
 const SEQUENCES = [
   // 160 y no 100: el giro completo son 360°, así que con 100 fotogramas el salto
   // entre uno y otro es de 3,6° y el ojo lo lee como escalón. Con 160 baja a 2,25°.
-  { name: 'rotate', input: 'assets/source/product-rotate.mp4', frames: 160, fallbackAt: 0.05, tight: true },
-  { name: 'walk', input: 'assets/source/product-walk.mp4', frames: 160, fallbackAt: 0.5, tight: false },
-  { name: 'explode', input: 'assets/source/product-explode.mp4', frames: 120, fallbackAt: 1, tight: true },
+  // `cut`: los fotogramas salen SIN fondo (alfa, por clave de color sobre el
+  // crema medido del set). Es lo que permite que en el hero el zapato gire por
+  // delante del titular y que el papel de la página sea el único fondo.
+  { name: 'rotate', input: 'assets/source/product-rotate.mp4', frames: 160, fallbackAt: 0.05, tight: true, cut: true },
+  // `clip`: tramo del vídeo en segundos. El paso se corta cuando la mujer sale
+  // por la derecha: si no, el último tramo del scroll es medio segundo de
+  // ciclorama vacío, y se lee como que la web se ha quedado sin fotogramas.
+  { name: 'walk', input: 'assets/source/product-walk.mp4', frames: 160, fallbackAt: 0.5, tight: false, clip: 'exit' },
+  // No hay clip de despiece: la Anatomía y la Ficha técnica van con la cámara
+  // sobre fotos (src/camera.ts), que sale de `emitStills()`.
 ]
 
 /**
@@ -60,6 +67,12 @@ const BUDGET = {
   desktop: { bytes: 9 * 1024 * 1024, perFrameTargetKB: 55, widths: [1920, 1600, 1440] },
   mobile: { bytes: 3 * 1024 * 1024, perFrameTargetKB: 22, widths: [960, 828, 720] },
 }
+// Con alfa cada fotograma lleva un plano más; el presupuesto sube un tercio
+// para no perder resolución justo en el hero, donde el zapato es más grande.
+const BUDGET_CUT = {
+  desktop: { ...BUDGET.desktop, bytes: 12 * 1024 * 1024, perFrameTargetKB: 75 },
+  mobile: { ...BUDGET.mobile, bytes: 4 * 1024 * 1024, perFrameTargetKB: 28 },
+}
 const QUALITIES = [82, 76, 70, 64, 58]
 
 const KB = (b) => (b / 1024).toFixed(1)
@@ -71,6 +84,8 @@ function parseArgs(argv) {
     const a = argv[i]
     if (a === '--all') out.all = true
     else if (a === '--only') { out.all = true; out.only = argv[++i] }
+    // Solo las imágenes de página (póster aparte): sin tocar las secuencias.
+    else if (a === '--images') { out.all = true; out.only = '__none__' }
     else if (a.startsWith('--')) out[a.slice(2)] = argv[++i]
   }
   return out
@@ -148,8 +163,14 @@ async function measureSubject(input) {
   // giro) y de qué lado tiene su punto más alto (el talón de un salón): de
   // ahí sale el still de perfil y si hay que voltearlo bajo el plano.
   let widest = { f: 0, w: -1, heelRight: true }
+  // Caja de cada fotograma por separado. De aquí salen el último fotograma en
+  // que hay producto (para recortar el paso) y las vistas frontal y trasera
+  // del giro (para la cámara de la anatomía).
+  const perFrame = []
   for (let f = 0; f < frames; f++) {
-    let x0 = W, x1 = -1, topY = H, topX = 0
+    let x0 = W, x1 = -1, y0 = H, y1 = -1, topY = H, topX = 0
+    // Ancho del producto en su franja inferior (para distinguir frente de espalda).
+    let bx0 = W, bx1 = -1
     for (let y = 0; y < H; y++) {
       const bg = bgAt(y)
       for (let x = 0; x < W; x++) {
@@ -157,10 +178,24 @@ async function measureSubject(input) {
           colHit[x] = true; rowHit[y] = true
           if (x < x0) x0 = x
           if (x > x1) x1 = x
+          if (y < y0) y0 = y
+          if (y > y1) y1 = y
           if (y < topY) { topY = y; topX = x }
         }
       }
     }
+    if (y1 >= 0) {
+      const band = Math.max(y0, y1 - Math.round((y1 - y0) * 0.12))
+      for (let y = band; y <= y1; y++) {
+        const bg = bgAt(y)
+        for (let x = 0; x < W; x++) {
+          if (Math.abs(at(f, x, y) - bg) > UMBRAL) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x }
+        }
+      }
+    }
+    perFrame.push(x1 < 0
+      ? null
+      : { x0: x0 / W, x1: x1 / W, y0: y0 / H, y1: y1 / H, width: (x1 - x0) / W, bottomWidth: bx1 < 0 ? 0 : (bx1 - bx0) / W })
     if (x1 - x0 > widest.w) widest = { f, w: x1 - x0, heelRight: topX > (x0 + x1) / 2 }
   }
 
@@ -179,7 +214,46 @@ async function measureSubject(input) {
   }
   box.widestAt = frames > 1 ? widest.f / (frames - 1) : 0
   box.heelRight = widest.heelRight
+  box.perFrame = perFrame
   return box
+}
+
+/**
+ * Instante (0-1) a partir del cual el producto ya no está en el encuadre y no
+ * vuelve: donde se corta el paso. Si el producto está hasta el final, 1.
+ */
+function exitAt(subject) {
+  const pf = subject.perFrame
+  let last = -1
+  for (let f = 0; f < pf.length; f++) if (pf[f]) last = f
+  return last < 0 ? 1 : Math.min(1, (last + 1) / pf.length)
+}
+
+/**
+ * Las dos vistas del giro que no son el perfil: FRENTE (se ve el interior: forro
+ * y palmilla) y ESPALDA (la suela y el tacón). Son los fotogramas en que el
+ * producto es más estrecho, uno en cada media vuelta; se distinguen por lo que
+ * toca el suelo: de frente, la punta entera (ancha); de espaldas, la tapa (un
+ * punto). Se miden en vez de escribirlos a mano porque cada clip que genera la
+ * IA arranca en una pose distinta.
+ */
+function pickViews(subject) {
+  const pf = subject.perFrame
+  const n = pf.length
+  const narrowest = (from, to) => {
+    let best = -1
+    for (let f = from; f < to; f++) {
+      if (!pf[f]) continue
+      if (best < 0 || pf[f].width < pf[best].width) best = f
+    }
+    return best
+  }
+  const half = Math.floor(n / 2)
+  const a = narrowest(0, half)
+  const b = narrowest(half, n)
+  if (a < 0 || b < 0) return null
+  const [front, back] = pf[a].bottomWidth >= pf[b].bottomWidth ? [a, b] : [b, a]
+  return { front: front / (n - 1), back: back / (n - 1) }
 }
 
 /**
@@ -255,22 +329,121 @@ function pickCrop(subject, srcW, srcH, ratios) {
   return { label: 'completo', width: srcW, height: srcH, x: 0, y: 0, ratio: srcW / srcH, fill: (sx1 - sx0) / srcW }
 }
 
+/**
+ * Recorte del fondo por clave de color. Similitud 0.13: por debajo queda la
+ * sombra del suelo como una mancha; por encima empieza a comerse las escamas
+ * crema. Con 0.13 sobrevive una sombra de contacto leve, que es justo la que
+ * un zapato apoyado tiene que tener.
+ */
+const keyFilter = (key) => `format=rgba,colorkey=${key.replace('#', '0x')}:0.13:0.06`
+
+/**
+ * Rellena los AGUJEROS del recorte. La clave de color se come también las
+ * escamas crema del propio zapato: quedaban huecos por los que se veía el
+ * titular. Lo que es fondo de verdad está conectado con el borde del
+ * fotograma; lo que no lo está, es zapato. Se inunda desde los bordes por los
+ * píxeles transparentes: lo que no se alcanza pasa a opaco. Los píxeles
+ * semitransparentes del contorno exterior sí se alcanzan y conservan su alfa,
+ * así que el antialias del borde se queda.
+ */
+function fillHoles(rgba, w, h) {
+  const n = w * h
+  const outside = new Uint8Array(n)
+  const stack = []
+  const push = (i) => { if (!outside[i] && rgba[i * 4 + 3] < 128) { outside[i] = 1; stack.push(i) } }
+  for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x) }
+  for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1) }
+  while (stack.length) {
+    const i = stack.pop()
+    const x = i % w
+    if (x > 0) push(i - 1)
+    if (x < w - 1) push(i + 1)
+    if (i >= w) push(i - w)
+    if (i < n - w) push(i + w)
+  }
+  for (let i = 0; i < n; i++) if (!outside[i]) rgba[i * 4 + 3] = 255
+}
+
+/**
+ * Extrae fotogramas RECORTADOS (con alfa) como PAM, que cwebp lee directamente:
+ * ffmpeg → RGBA en bruto → relleno de agujeros → PAM. `count` fotogramas
+ * repartidos por `duration` desde `from`; con count 1 sirve para un still.
+ */
+function cutFrames(input, dir, { vf, count, from = 0, duration, at }) {
+  return new Promise((resolve, reject) => {
+    const args = ['-hide_banner', '-loglevel', 'error']
+    if (at !== undefined) args.push('-ss', at.toFixed(3))
+    else if (from > 0) args.push('-ss', from.toFixed(3))
+    args.push('-i', input)
+    if (at === undefined && duration) args.push('-t', duration.toFixed(3))
+    const filter = at === undefined && count > 1 ? `${vf},fps=${(count / duration).toFixed(6)}` : vf
+    args.push('-vf', filter, '-frames:v', String(count), '-vsync', '0', '-f', 'rawvideo', '-pix_fmt', 'rgba', '-')
+    const proc = spawn('ffmpeg', args)
+    let dims = null
+    let buf = Buffer.alloc(0)
+    const files = []
+    let pending = Promise.resolve()
+    proc.stderr.on('data', (d) => process.stderr.write(d))
+    proc.stdout.on('data', (chunk) => {
+      buf = buf.length ? Buffer.concat([buf, chunk]) : chunk
+      if (!dims) return
+      const frameBytes = dims.w * dims.h * 4
+      while (buf.length >= frameBytes) {
+        const frame = Buffer.from(buf.subarray(0, frameBytes))
+        buf = buf.subarray(frameBytes)
+        const idx = files.length
+        const out = path.join(dir, `f-${String(idx + 1).padStart(5, '0')}.pam`)
+        files.push(out)
+        fillHoles(frame, dims.w, dims.h)
+        const header = Buffer.from(`P7\nWIDTH ${dims.w}\nHEIGHT ${dims.h}\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n`)
+        pending = pending.then(() => writeFile(out, Buffer.concat([header, frame])))
+      }
+    })
+    proc.on('error', reject)
+    proc.on('close', async (code) => {
+      if (code !== 0) return reject(new Error(`ffmpeg salió con ${code} recortando ${input}`))
+      await pending
+      resolve({ files, width: dims.w, height: dims.h })
+    })
+    // Dimensiones: ffprobe sobre el filtro de escala es más frágil que pedirlas
+    // al propio ffmpeg con -f null, así que se resuelven antes de leer el flujo.
+    probeFilter(input, vf).then((d) => { dims = d; proc.stdout.emit('data', Buffer.alloc(0)) }, reject)
+  })
+}
+
+/** Anchura y altura que produce un filtro de vídeo sobre `input`. */
+async function probeFilter(input, vf) {
+  const { stderr } = await run('ffmpeg', ['-hide_banner', '-i', input, '-vf', `${vf},showinfo`, '-frames:v', '1', '-f', 'null', '-'],
+    { maxBuffer: 1 << 24 }).catch((e) => e)
+  const m = /\bs:(\d+)x(\d+)/.exec(stderr || '')
+  if (!m) throw new Error(`no pude medir el filtro ${vf}`)
+  return { w: Number(m[1]), h: Number(m[2]) }
+}
+
 /** Filtro de vídeo por juego. */
-function videoFilter(width, crop) {
-  return crop
+function videoFilter(width, crop, key) {
+  const base = crop
     ? `crop=${crop.width}:${crop.height}:${crop.x}:${crop.y},scale=${width}:-2:flags=lanczos`
     : `scale=${width}:-2:flags=lanczos`
+  return key ? `${base},${keyFilter(key)}` : base
 }
 
 /** Extrae exactamente `count` PNG repartidos de forma uniforme por todo el clip. */
-async function extractPngs(input, dir, { width, count, duration, crop }) {
+async function extractPngs(input, dir, { width, count, duration, crop, from = 0, key }) {
   await rm(dir, { recursive: true, force: true })
   await mkdir(dir, { recursive: true })
+  if (key) {
+    const r = await cutFrames(input, dir, { vf: videoFilter(width, crop, key), count, from, duration })
+    if (!r.files.length) throw new Error(`ffmpeg no extrajo ningún frame de ${input}`)
+    return r.files
+  }
   const fps = count / duration
   await run('ffmpeg', [
     '-hide_banner', '-loglevel', 'error',
+    ...(from > 0 ? ['-ss', from.toFixed(3)] : []),
     '-i', input,
-    '-vf', `${videoFilter(width, crop)},fps=${fps.toFixed(6)}`,
+    '-t', duration.toFixed(3),
+    '-vf', `${videoFilter(width, crop, key)},fps=${fps.toFixed(6)}`,
     '-frames:v', String(count),
     '-vsync', '0',
     path.join(dir, 'f-%05d.png'),
@@ -281,7 +454,7 @@ async function extractPngs(input, dir, { width, count, duration, crop }) {
 }
 
 /** cwebp en paralelo, un proceso por core (menos 1). */
-async function encodeWebp(pngs, outDir, quality) {
+async function encodeWebp(pngs, outDir, quality, alpha = false) {
   await rm(outDir, { recursive: true, force: true })
   await mkdir(outDir, { recursive: true })
   const limit = Math.max(2, os.cpus().length - 1)
@@ -293,7 +466,7 @@ async function encodeWebp(pngs, outDir, quality) {
     while (next < pngs.length) {
       const i = next++
       const out = path.join(outDir, `frame-${String(i + 1).padStart(4, '0')}.webp`)
-      await run('cwebp', ['-quiet', '-q', String(quality), '-m', '6', '-sharp_yuv', pngs[i], '-o', out])
+      await run('cwebp', ['-quiet', '-q', String(quality), '-m', '6', '-sharp_yuv', ...(alpha ? ['-alpha_q', '90'] : []), pngs[i], '-o', out])
       const { size } = await stat(out)
       total += size
       if (size > max) max = size
@@ -315,22 +488,30 @@ const IMG_DIR = path.join(ROOT, 'public', 'img')
 const EMITTED = new Map()
 
 /** Un frame del vídeo -> WebP recortado y escalado. */
-async function still(input, { at, crop, width, height, quality, out }) {
+async function still(input, { at, crop, width, height, quality, out, key }) {
   EMITTED.set(out, { width, height })
   await mkdir(IMG_DIR, { recursive: true })
   const png = path.join(TMP, `still-${path.basename(out, '.webp')}.png`)
   await mkdir(TMP, { recursive: true })
   const seek = at > 0 ? ['-ss', at.toFixed(3)] : []
-  await run('ffmpeg', [
-    '-hide_banner', '-loglevel', 'error', '-y',
-    ...seek, '-i', input,
-    '-frames:v', '1',
-    '-vf', `${crop},scale=${width}:${height}:flags=lanczos`,
-    png,
-  ])
+  let src = png
+  if (key) {
+    const dir = path.join(TMP, `cut-${path.basename(out, '.webp')}`)
+    await mkdir(dir, { recursive: true })
+    const r = await cutFrames(input, dir, { vf: `${crop},scale=${width}:${height}:flags=lanczos,${keyFilter(key)}`, count: 1, at })
+    src = r.files[0]
+  } else {
+    await run('ffmpeg', [
+      '-hide_banner', '-loglevel', 'error', '-y',
+      ...seek, '-i', input,
+      '-frames:v', '1',
+      '-vf', `${crop},scale=${width}:${height}:flags=lanczos`,
+      png,
+    ])
+  }
   const dest = path.join(IMG_DIR, out)
-  await run('cwebp', ['-quiet', '-q', String(quality), '-m', '6', '-sharp_yuv', png, '-o', dest])
-  await rm(png, { force: true })
+  await run('cwebp', ['-quiet', '-q', String(quality), '-m', '6', '-sharp_yuv', ...(key ? ['-alpha_q', '90'] : []), src, '-o', dest])
+  await rm(src, { force: true })
   const { size } = await stat(dest)
   console.log(`   still  ${out.padEnd(22)} ${width}x${height}  ${KB(size)} KB`)
   return size
@@ -358,8 +539,9 @@ const CRAFT_SHOTS = [
   { out: 'craft-cambrillon.webp', at: 0.52, yAt: 0.74, zoom: 0.62, custom: 'atelier-cambrillon' },
   { out: 'craft-laca.webp',       at: 0.78, yAt: 0.86, zoom: 0.55, custom: 'atelier-laca' },
 ]
-const CRAFT_W = 720
-const CRAFT_H = 900
+// A pantalla completa: los paneles del atelier cubren el ancho del viewport.
+const CRAFT_W = 1440
+const CRAFT_H = 1800
 
 function findCustom(name) {
   return ['png', 'jpg', 'jpeg', 'webp']
@@ -372,19 +554,49 @@ function findCustom(name) {
  * recorte y las mismas dimensiones que cada juego. El lienzo lo redibuja con
  * su misma fórmula de encuadre, así que el relevo es invisible.
  */
-async function emitHeroPoster(seq, crops, desktop, mobile) {
+async function emitHeroPoster(seq, crops, desktop, mobile, key) {
   const box = (c) => (c ? `crop=${c.width}:${c.height}:${c.x}:${c.y}` : 'crop=iw:ih')
   await still(seq.inputAbs, {
     at: 0.02, crop: box(crops.desktop), width: desktop.width, height: desktop.height,
-    quality: 86, out: 'hero-poster.webp',
+    quality: 86, out: 'hero-poster.webp', key,
   })
   await still(seq.inputAbs, {
     at: 0.02, crop: box(crops.mobile), width: mobile.width, height: mobile.height,
-    quality: 86, out: 'hero-poster-mobile.webp',
+    quality: 86, out: 'hero-poster-mobile.webp', key,
   })
 }
 
+/**
+ * Fotos sueltas que la web usa a tamaño grande: la macro de la punta (La punta)
+ * y las dos que recorre la cámara de la anatomía y la ficha (el perfil maestro y
+ * el acero del atelier). Se emiten con más resolución que las del atelier
+ * porque la cámara las amplía hasta ×2,4.
+ */
+const STILLS = [
+  // El fondo del hero: papel crema con luz suave (lo generó Mila, 2026-09-07).
+  // Es un degradado liso: a 1280 px ampliado no se nota y pesa poco, que
+  // importa porque es lo primero que se pinta a pantalla completa.
+  { custom: 'hero-backdrop', out: 'hero-backdrop.webp', long: 1280, quality: 74 },
+  { custom: 'detail-toe', out: 'detail-toe.webp', long: 1600, quality: 80 },
+  { custom: 'atelier-cambrillon', out: 'anatomy-shank.webp', long: 1800, quality: 80 },
+]
+
+async function emitStills() {
+  for (const st of STILLS) {
+    const source = findCustom(st.custom)
+    if (!source) { console.log(`   (sin ${st.custom}: se conserva ${st.out} tal cual)`); continue }
+    const { stdout } = await run('ffprobe', ['-v', 'error', '-select_streams', 'v:0',
+      '-show_entries', 'stream=width,height', '-of', 'csv=p=0:s=x', source])
+    const [w, h] = stdout.trim().split('x').map(Number)
+    const scale = Math.min(1, st.long / Math.max(w, h))
+    const width = Math.round((w * scale) / 2) * 2
+    const height = Math.round((h * scale) / 2) * 2
+    await still(source, { at: 0, crop: 'crop=iw:ih', width, height, quality: st.quality, out: st.out })
+  }
+}
+
 async function emitPageImages() {
+  await emitStills()
   if (!existsSync(REF)) {
     console.log('   (sin product-ref.png: el póster y el atelier se derivan de los clips)')
     return null
@@ -400,6 +612,22 @@ async function emitPageImages() {
     `(${Math.round((subject.x1 - subject.x0) * 100)}% del ancho)`
   )
 
+  // El perfil maestro para la cámara: recortado sobre el producto con margen,
+  // en 16:10 (la ficha lo enseña entero en una columna vertical y en 16:9 se
+  // quedaba en una tira). Y el color de su ciclorama, para que el marco de la
+  // cámara sea el mismo crema y el borde de la foto no se lea.
+  const refCrop = pickCrop(subject, w, h, [16 / 10])
+  const refW = Math.min(1920, refCrop.width)
+  const refH = Math.round((refW * refCrop.height) / refCrop.width / 2) * 2
+  await still(REF, {
+    at: 0, crop: `crop=${refCrop.width}:${refCrop.height}:${refCrop.x}:${refCrop.y}`,
+    width: refW, height: refH, quality: 84, out: 'anatomy-profile.webp',
+  })
+  const studio = await measureBackground(REF)
+  // Dónde cae el producto dentro del recorte: la cámara enfoca en fracciones de
+  // la imagen, y con esto el HTML puede hablar en fracciones DEL ZAPATO.
+  const inFrame = subjectInFrame(subject, { width: w, height: h }, refCrop)
+
   // Macros: recorte 4:5 centrado en un punto a lo largo de la pieza.
   const sx0 = subject.x0 * w
   const sx1 = subject.x1 * w
@@ -410,7 +638,7 @@ async function emitPageImages() {
     if (source) {
       await still(source, {
         at: 0, crop: 'crop=floor(ih*4/5/2)*2:ih',
-        width: CRAFT_W, height: CRAFT_H, quality: 80, out: shot.out,
+        width: CRAFT_W, height: CRAFT_H, quality: 78, out: shot.out,
       })
       continue
     }
@@ -427,7 +655,11 @@ async function emitPageImages() {
       width: CRAFT_W, height: CRAFT_H, quality: 74, out: shot.out,
     })
   }
-  return { craft: { width: CRAFT_W, height: CRAFT_H } }
+  return {
+    craft: { width: CRAFT_W, height: CRAFT_H },
+    studio,
+    ref: { width: refW, height: refH, heelRight: subject.heelRight, subject: inFrame },
+  }
 }
 
 /**
@@ -455,9 +687,9 @@ async function cutout(input, { at, crop, key, width, height, out }) {
 }
 
 /** Imagen de respaldo de cada secuencia, para reduce-motion o fallo de carga. */
-async function emitFallback(seq, meta, crop) {
+async function emitFallback(seq, meta, crop, key) {
   const frac = seq.fallbackAt ?? 0.05
-  const at = frac >= 1 ? Math.max(0, meta.duration - 0.3) : frac * meta.duration
+  const at = meta.from + (frac >= 1 ? Math.max(0, meta.duration - 0.3) : frac * meta.duration)
   // Mismo recorte que el juego de escritorio, y la proporción sale de ahí: un
   // 1440x810 escrito a mano aplastaría cualquier encuadre que no fuese 16:9.
   const srcW = crop ? crop.width : meta.width
@@ -468,7 +700,7 @@ async function emitFallback(seq, meta, crop) {
     at,
     crop: crop ? `crop=${crop.width}:${crop.height}:${crop.x}:${crop.y}` : 'crop=iw:ih',
     width, height, quality: 78,
-    out: `fallback-${seq.name}.webp`,
+    out: `fallback-${seq.name}.webp`, key,
   })
 }
 
@@ -483,8 +715,8 @@ function subjectInFrame(subject, meta, crop) {
   }
 }
 
-async function buildVariant(seq, variant, meta, crop, subject) {
-  const budget = BUDGET[variant]
+async function buildVariant(seq, variant, meta, crop, subject, key) {
+  const budget = (key ? BUDGET_CUT : BUDGET)[variant]
   const tmpDir = path.join(TMP, seq.name, variant)
   const outDir = path.join(OUT_ROOT, seq.name, variant)
 
@@ -496,17 +728,13 @@ async function buildVariant(seq, variant, meta, crop, subject) {
 
   for (const width of widths) {
     const pngs = await extractPngs(seq.inputAbs, tmpDir, {
-      width, count: seq.frames, duration: meta.duration, crop,
+      width, count: seq.frames, duration: meta.duration, crop, from: meta.from, key,
     })
-    // Dimensiones reales del primer PNG (el filtro -2 redondea a par).
-    const { stdout } = await run('ffprobe', [
-      '-v', 'error', '-select_streams', 'v:0',
-      '-show_entries', 'stream=width,height', '-of', 'csv=p=0:s=x', pngs[0],
-    ])
-    const [w, h] = stdout.trim().split('x').map(Number)
+    // Dimensiones reales del primer fotograma (el filtro -2 redondea a par).
+    const { w, h } = await probeFilter(pngs[0], 'null')
 
     for (const q of QUALITIES) {
-      const res = await encodeWebp(pngs, outDir, q)
+      const res = await encodeWebp(pngs, outDir, q, !!key)
       const avg = res.total / res.count
       const ok = res.total <= budget.bytes
       console.log(
@@ -544,6 +772,20 @@ async function buildSequence(seq) {
 
   const subject = await measureSubject(seq.inputAbs)
   const background = await measureBackground(seq.inputAbs)
+  // Tramo del vídeo que entra en la secuencia. `clip: 'exit'` corta donde el
+  // producto sale del encuadre; `[a, b]` son segundos. `meta.from`/`meta.duration`
+  // pasan a describir el tramo, y el resto del build no distingue.
+  meta.from = 0
+  if (seq.clip === 'exit') {
+    const end = exitAt(subject) * meta.duration
+    if (end < meta.duration - 0.05) {
+      console.log(`   el producto sale del encuadre a los ${end.toFixed(2)}s: se corta ahí`)
+      meta.duration = end
+    }
+  } else if (Array.isArray(seq.clip)) {
+    meta.from = seq.clip[0]
+    meta.duration = Math.min(meta.duration, seq.clip[1]) - seq.clip[0]
+  }
   const tight = seq.tight ?? true
   const full = { label: 'completo', width: meta.width, height: meta.height, x: 0, y: 0, ratio: meta.width / meta.height, fill: subject.x1 - subject.x0 }
   const crops = tight
@@ -573,11 +815,13 @@ async function buildSequence(seq) {
     )
   }
 
-  await emitFallback(seq, meta, crops.desktop)
-  const desktop = await buildVariant(seq, 'desktop', meta, crops.desktop, subject)
-  const mobile = await buildVariant(seq, 'mobile', meta, crops.mobile, subject)
+  const key = seq.cut ? background : undefined
+  if (key) console.log(`   fondo recortado por clave de color ${key} (fotogramas con alfa)`)
+  await emitFallback(seq, meta, crops.desktop, key)
+  const desktop = await buildVariant(seq, 'desktop', meta, crops.desktop, subject, key)
+  const mobile = await buildVariant(seq, 'mobile', meta, crops.mobile, subject, key)
   if (seq.name === 'rotate') {
-    await emitHeroPoster(seq, crops, desktop, mobile)
+    await emitHeroPoster(seq, crops, desktop, mobile, key)
     // El perfil: el fotograma más ancho del giro. Lo usan el plano (bajo el
     // dibujo, volteado si el talón cae a la izquierda) y la colección.
     const c = crops.desktop
@@ -586,6 +830,21 @@ async function buildSequence(seq) {
       crop: `crop=${c.width}:${c.height}:${c.x}:${c.y}`,
       width: desktop.width, height: desktop.height, quality: 84, out: 'still-profile.webp',
     })
+    // Frente y espalda del giro, para la cámara de la anatomía: el forro y la
+    // palmilla solo se ven de frente; la suela y la tapa, de espaldas.
+    const views = pickViews(subject)
+    if (views) {
+      for (const [name, frac] of Object.entries(views)) {
+        console.log(`   vista ${name.padEnd(6)} en el ${Math.round(frac * 100)}% del giro`)
+        await still(seq.inputAbs, {
+          at: frac * meta.duration,
+          crop: `crop=${c.width}:${c.height}:${c.x}:${c.y}`,
+          width: desktop.width, height: desktop.height, quality: 84, out: `anatomy-${name}.webp`,
+        })
+      }
+    } else {
+      console.log('   ⚠︎ no se pudieron localizar las vistas frontal y trasera del giro')
+    }
     profileMeta = { width: desktop.width, height: desktop.height, flip: !subject.heelRight }
     // Y el mismo perfil RECORTADO del fondo (alfa), para que la colección pueda
     // teñirlo con filtros CSS sin que el ciclorama se tiña con él.
@@ -608,7 +867,7 @@ async function buildSequence(seq) {
       `${BUDGET.desktop.perFrameTargetKB} KB (dentro del presupuesto total, pero apretado).`
     )
   }
-  return { frames: desktop.count, background, desktop, mobile }
+  return { frames: desktop.count, background, cut: !!key, desktop, mobile }
 }
 
 /**
@@ -643,7 +902,7 @@ async function main() {
   const list = args.all
     ? SEQUENCES.filter((s) => !args.only || s.name === args.only)
     : [{ name: args.name, input: args.input, frames: Number(args.frames) || 100 }]
-  if (args.only && !list.length) {
+  if (args.only && args.only !== '__none__' && !list.length) {
     console.error(`--only ${args.only}: no existe. Secuencias: ${SEQUENCES.map((s) => s.name).join(', ')}`)
     process.exit(1)
   }
@@ -661,6 +920,10 @@ async function main() {
   // Cada secuencia construida sustituye entera su entrada del manifest, y con
   // ella la marca `placeholder` que deja el material provisional.
   for (const seq of list) manifest[seq.name] = await buildSequence(seq)
+  // Secuencias que ya no existen en el proyecto no se quedan en el manifest.
+  for (const name of Object.keys(manifest)) {
+    if (name !== 'images' && !SEQUENCES.some((s) => s.name === name)) delete manifest[name]
+  }
   manifest.images = { ...(manifest.images || {}), ...(pageImages || {}) }
   if (profileMeta) manifest.images.profile = profileMeta
 

@@ -10,7 +10,25 @@
    que se pinta ya costó una vez 2,3 s de render delay.                   */
 .hero { position: relative; }
 
-.hero__stage { background: var(--seq-bg, var(--bg-2)); }
+/* El escenario es el propio papel: los fotogramas del giro van recortados (alfa)
+   y el lienzo es transparente, así que no hay ciclorama que pintar. Detrás de
+   todo, la foto del papel con luz (hero__backdrop), a sangre. */
+.hero__stage { background: var(--bg); isolation: isolate; }
+.hero__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+/* Orden de capas: fondo (-1) → titular (0) → póster y lienzo (1) → segunda
+   línea, notas, suelo y entradilla (2). El zapato gira entre las dos líneas. */
+.hero .hero__poster, .hero .seq__canvas { z-index: 1; }
+.hero__copy { z-index: 0; }
+.hero__copy--front { z-index: 2; }
+.hero__line--ghost { visibility: hidden; }
 
 .hero__poster,
 .hero__poster img {
@@ -42,39 +60,114 @@
 
 .hero__copy {
   position: absolute;
-  z-index: 2;
   left: var(--content-inset);
   right: var(--content-edge);
   top: clamp(5.5rem, 12vh, 8rem);
   display: grid;
   justify-items: center;
   text-align: center;
-  gap: 0.9rem;
-  /* Se desvanece con el scroll (lo fija el JS) y deja la pieza limpia. */
+  gap: 1.1rem;
+  /* Se desvanece con el scroll (lo fija el JS) y deja la pieza limpia. El
+     ratón lo mueve unos píxeles (--mx/--my): la portada respira. */
   opacity: var(--hero-copy, 1);
+  transform: translate(calc(var(--mx, 0) * 10px), calc(var(--my, 0) * 8px));
+  will-change: transform, opacity;
+  pointer-events: none;
 }
-.hero__copy .lede { max-width: 44ch; font-size: clamp(1rem, 1.25vw, 1.15rem); }
+/* La entradilla no va debajo del titular —caería sobre el zapato— sino abajo a
+   la izquierda, sobre el suelo, donde el zapato deja aire. Se va con el titular. */
+.hero__lede {
+  position: absolute;
+  z-index: 2;
+  right: var(--content-edge);
+  bottom: clamp(5.5rem, 12vh, 7.5rem);
+  max-width: 30ch;
+  text-align: right;
+  font-size: clamp(0.95rem, 1.15vw, 1.1rem);
+  opacity: var(--hero-copy, 1);
+  pointer-events: none;
+  /* No es el LCP: puede entrar. `backwards` y no `both`: con `both` el último
+     fotograma de la animación (opacity 1) se quedaba mandando para siempre y
+     anulaba el fundido con el scroll, y la entradilla se juntaba con la nota
+     de abajo a la derecha. */
+  animation: hero-fade 1.1s var(--ease-reveal) 0.5s backwards;
+}
 
+/* Portada: el titular a lo GRANDE, dos líneas que pasan por delante del
+   zapato. Con el scroll (--hero-split, 0→1) la primera se va a la izquierda y
+   la segunda a la derecha, y el zapato se queda solo girando. */
 .hero__title {
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(2.4rem, 4.8vw, 4.4rem);
-  line-height: 1;
-  letter-spacing: -0.022em;
-  text-wrap: balance;
-  max-width: 14ch;
+  font-size: clamp(2.6rem, 8.4vw, 8.4rem);
+  line-height: 0.96;
+  letter-spacing: -0.03em;
+  display: grid;
+  justify-items: center;
+}
+.hero__line { display: block; white-space: nowrap; will-change: transform; }
+.hero__line--a { transform: translateX(calc(var(--hero-split, 0) * -38vw)); }
+.hero__line--b { transform: translateX(calc(var(--hero-split, 0) * 38vw)); }
+
+/* El suelo: línea roja que se traza al cargar, con tres apuntes encima. */
+.hero__floor {
+  position: absolute;
+  z-index: 2;
+  left: var(--content-inset);
+  right: var(--content-edge);
+  bottom: clamp(1.4rem, 4vh, 2.6rem);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.9rem;
+  opacity: var(--hero-copy, 1);
+  pointer-events: none;
+}
+.hero__floor-note {
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+  animation: hero-fade 0.9s var(--ease) 1s backwards;
+}
+.hero__floor .seq__hint { position: static; bottom: auto; right: auto; font-size: 0.6875rem; letter-spacing: 0.16em; color: var(--fg); }
+.hero__floor-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--accent);
+  transform-origin: 0 50%;
+  animation: hero-draw 1.4s var(--ease-reveal) 0.15s both;
+}
+@keyframes hero-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes hero-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .hero__lede, .hero__floor-note, .hero__floor-line { animation: none; }
+  .hero__line--a, .hero__line--b { transform: none; }
 }
 
 @media (max-aspect-ratio: 1 / 1) {
+  /* Titular y entradilla apilados abajo: la entradilla pegada al suelo y el
+     titular justo encima de ella. */
   .hero__copy {
     top: auto;
-    bottom: clamp(2rem, 6vh, 4rem);
+    bottom: calc(clamp(2rem, 6vh, 4rem) + 6.4rem);
     justify-items: start;
     text-align: left;
     gap: 1.1rem;
+    transform: none;
+    z-index: 2;
   }
-  .hero__title { max-width: none; font-size: clamp(2.6rem, 11vw, 4rem); }
-  .hero__poster { inset: 8vh 0 34vh 0; }
+  /* En vertical el titular va debajo del zapato, no detrás: la copia sobra. */
+  .hero__copy--front { display: none; }
+  .hero__title { font-size: clamp(2.6rem, 12vw, 4.6rem); justify-items: start; }
+  .hero__lede { bottom: clamp(2rem, 6vh, 4rem); left: var(--content-inset); right: var(--content-edge); max-width: 44ch; text-align: left; font-size: 1rem; }
+  .hero__line { white-space: normal; }
+  .hero__line--a, .hero__line--b { transform: none; }
+  .hero__floor { display: none; }
+  .hero__poster { inset: 8vh 0 38vh 0; }
   .hero__poster img { object-position: 50% 50%; }
 }
 
@@ -143,39 +236,74 @@
 }
 
 
-/* ── 2 · MANIFIESTO ─────────────────────────────────────────── */
-.manifesto .duet__body { display: grid; gap: 2.5rem; align-self: center; min-height: 82vh; align-content: center; }
-.manifesto__body {
-  font-family: var(--display);
-  font-weight: 400;
-  font-size: clamp(1.55rem, 3.7vw, 3rem);
-  line-height: 1.24;
-  letter-spacing: -0.012em;
-  text-wrap: pretty;
-  /* La medida vive en el párrafo, no en la sección: sobre el relleno del raíl
-     un tope en la caja de la sección se come el texto en pantallas anchas. */
-  max-width: 48rem;
-}
-.manifesto__body--quiet { color: var(--fg-2); }
-
-
 /* ── 3 · EL PLANO ────────────────────────────────────────────
    Alzado técnico que se traza con el scroll (src/plan.ts). El estado por
    defecto del SVG es DIBUJADO: es el JS quien lo esconde, así que sin JS o
    con reduce-motion la sección sigue enseñando el plano entero.     */
 .plan {
   border-top: 1px solid var(--rule);
-  display: grid;
-  gap: clamp(2.75rem, 7vh, 5rem);
+  padding-top: 0;
 }
-.plan__head { display: grid; gap: 1.25rem; max-width: 46rem; }
+/* Anclado como La punta: el carril mide el recorrido del trazado y el pin se
+   queda en pantalla mientras el dibujo se hace. Antes el trazo acababa con la
+   sección ya medio fuera del viewport y las cotas salían cuando nadie miraba. */
+.plan__scroll { height: 240svh; }
+.plan__pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(1rem, 3vh, 2rem);
+  padding-top: clamp(5rem, 11vh, 6.5rem);
+  padding-bottom: clamp(1.25rem, 3vh, 2rem);
+}
+/* Título y entradilla en una sola fila: cada rem que ahorra la cabecera es
+   un rem más de dibujo. En estrecho vuelven a apilarse. */
+.plan__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: 1rem clamp(2rem, 5vw, 4rem);
+}
+.plan__head .lede { font-size: clamp(1rem, 1.3vw, 1.15rem); max-width: 44ch; padding-bottom: 0.45em; }
+@media (max-width: 820px) {
+  .plan__head { grid-template-columns: 1fr; align-items: start; }
+  .plan__head .lede { padding-bottom: 0; }
+}
+.plan__figures { margin-top: clamp(2.5rem, 6vh, 4rem); }
+@media (prefers-reduced-motion: reduce) {
+  .plan__scroll { height: auto; }
+  .plan__pin { position: static; height: auto; }
+}
 
-.plan__draw { margin: 0; display: grid; gap: 1.25rem; justify-items: start; }
-.plan__stage { position: relative; width: 100%; max-width: 62rem; }
+/* El dibujo va a lo grande: todo el ancho del raíl, de la espina al margen.
+   Mila lo pidió así el 2026-09-06: alineado a la izquierda en una caja de 62 rem
+   quedaba pequeño y dejaba media pantalla vacía. Las cifras de abajo siguen la
+   misma medida para que el bloque se lea como uno solo. */
+.plan__draw { margin: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; align-content: center; gap: 1rem; }
+/* El escenario es lo más ancho que cabe SIN salirse del alto que le deja la
+   cabecera: si sobra ancho, se centra. La proporción es la del viewBox (7:4;
+   en móvil, la del encuadre estrecho), y por eso la foto colocada en % sigue
+   cayendo sobre el dibujo. */
+.plan__stage {
+  position: relative;
+  aspect-ratio: 7 / 4;
+  width: min(100%, calc((100svh - 15rem) * 1.75));
+  margin-inline: auto;
+}
+@media (max-width: 700px) {
+  .plan__stage { aspect-ratio: 512 / 408; width: min(100%, calc((100svh - 19rem) * 1.255)); }
+  /* En móvil el dibujo no llena el alto: el pie va pegado a él, no al fondo. */
+  .plan__draw { align-content: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plan__stage { width: 100%; }
+}
 .plan__svg {
   position: relative;
   width: 100%;
-  height: auto;
+  height: 100%;
   /* Las cotas y los números viven fuera de la caja del zapato. */
   overflow: visible;
 }
@@ -205,7 +333,9 @@
 .plan__num {
   fill: var(--fg-2);
   font-family: var(--sans);
-  font-size: 17px;
+  /* Unidades de viewBox: a todo el ancho del raíl el dibujo se pinta a ×1,8 y
+     con 17 las cotas salían a 30 px, más grandes que la entradilla. */
+  font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -215,13 +345,13 @@
   font-size: 0.875rem;
   color: var(--fg-2);
   max-width: 46ch;
+  justify-self: start;
 }
 
 .plan__figures {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: 1px solid var(--rule);
-  max-width: 62rem;
 }
 .plan__fig { padding: clamp(1.4rem, 3vw, 2.1rem) clamp(1rem, 2vw, 1.75rem) 0 0; }
 .plan__fig + .plan__fig {
@@ -275,64 +405,164 @@
 
 
 /* ── 4 · ATELIER ─────────────────────────────────────────────
-   Tres bloques que caen a lados distintos, no tres tarjetas iguales en fila:
-   la rejilla de tres columnas idénticas es lo que hace que una página de
-   catálogo parezca una plantilla.                                  */
-.atelier { border-top: 1px solid var(--rule); }
-.crafts {
-  margin-top: clamp(3rem, 8vh, 5.5rem);
+   Tres paneles a pantalla completa que se desplazan en horizontal al ritmo
+   del scroll (src/atelier.ts). La sección es alta (el recorrido) y el pin se
+   queda 100svh; dentro, la cabecera y un carril con tres paneles de 100% de
+   ancho. La foto va a sangre y el texto sobre una banda crema abajo, con el
+   número en el rojo de la suela. Solo se anima `transform`.            */
+.atelier { position: relative; height: 340svh; border-top: 1px solid var(--rule); }
+.atelier__pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
   display: grid;
-  gap: clamp(3.5rem, 11vh, 8rem);
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--bg);
+}
+.atelier__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: clamp(5rem, 11vh, 6.5rem) var(--content-edge) clamp(1.25rem, 3vh, 2rem) var(--content-inset);
+}
+.atelier__count {
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+.atelier__n { color: var(--fg); }
+.atelier__track {
+  display: flex;
+  height: 100%;
+  will-change: transform;
 }
 .craft {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
-  gap: clamp(1.75rem, 5vw, 4.5rem);
-  align-items: center;
+  position: relative;
+  flex: 0 0 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-2);
 }
-.craft:nth-child(2) { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); }
-.craft:nth-child(2) figure { order: 2; }
-.craft:nth-child(3) { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
-
-.craft figure { margin: 0; }
-.craft img {
+.craft__img {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  aspect-ratio: 4 / 5;
+  height: 100%;
   object-fit: cover;
-  filter: saturate(0.88) contrast(1.04);
+  object-position: 50% 45%;
+  /* Un poco más ancha que el panel, para tener de dónde mover en el paralaje. */
+  transform: scale(1.12);
+  transform-origin: 50% 50%;
+  will-change: transform;
+  filter: saturate(0.9) contrast(1.03);
 }
-.craft:nth-child(2) img { aspect-ratio: 3 / 4; }
-.craft:nth-child(3) img { aspect-ratio: 1 / 1; }
-
-.craft__body { display: grid; gap: 0.9rem; max-width: 40ch; }
+.craft__body {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: 'num title' 'num text';
+  column-gap: clamp(1.25rem, 3vw, 2.5rem);
+  row-gap: 0.75rem;
+  align-items: start;
+  padding: clamp(5rem, 14vh, 9rem) var(--content-edge) clamp(2rem, 5vh, 3.5rem) var(--content-inset);
+  background: linear-gradient(to top,
+    rgba(241, 234, 224, 0.97) 0%,
+    rgba(241, 234, 224, 0.92) 42%,
+    rgba(241, 234, 224, 0.55) 72%,
+    rgba(241, 234, 224, 0) 100%);
+}
+.craft__num {
+  grid-area: num;
+  font-family: var(--display);
+  font-variation-settings: 'opsz' var(--opsz-display);
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  line-height: 0.85;
+  color: var(--accent);
+  font-variant-numeric: lining-nums tabular-nums;
+}
 .craft h3 {
+  grid-area: title;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(1.6rem, 3.2vw, 2.5rem);
-  line-height: 1.05;
+  font-size: clamp(2rem, 4.2vw, 3.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
 }
-.craft p { color: var(--fg-2); font-size: 1rem; line-height: 1.66; }
+.craft p {
+  grid-area: text;
+  color: var(--fg-2);
+  font-size: clamp(1rem, 1.25vw, 1.15rem);
+  line-height: 1.6;
+  max-width: 52ch;
+}
 
-@media (max-width: 820px) {
-  .craft,
-  .craft:nth-child(2),
-  .craft:nth-child(3) { grid-template-columns: 1fr; gap: 1.5rem; }
-  .craft:nth-child(2) figure { order: 0; }
+/* En vertical (y con reduce-motion) no hay carril: los tres paneles se apilan,
+   cada uno con su foto y su texto debajo, en flujo. */
+@media (max-aspect-ratio: 1 / 1), (prefers-reduced-motion: reduce) {
+  .atelier { height: auto; }
+  .atelier__pin { position: static; height: auto; overflow: visible; display: block; }
+  .atelier__count { display: none; }
+  .atelier__track { display: grid; gap: clamp(2.5rem, 7vh, 4.5rem); height: auto; transform: none !important; }
+  .craft { height: auto; overflow: visible; background: transparent; }
+  .craft__img {
+    position: relative;
+    inset: auto;
+    aspect-ratio: 4 / 5;
+    height: auto;
+    transform: none !important;
+  }
+  .craft__body {
+    position: static;
+    background: none;
+    padding: 1.25rem var(--content-edge) 0 var(--content-inset);
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+@media (max-aspect-ratio: 1 / 1) {
+  .craft__img { aspect-ratio: 4 / 5; }
+  .atelier__track { padding-bottom: 0; }
 }
 
 
-/* ── 5 · FICHA TÉCNICA ──────────────────────────────────────── */
-.spec { border-top: 1px solid var(--rule); }
-.spec .duet__media { top: 14vh; height: 72vh; }
-.spec .seq__pin { height: 72vh; }
-.spec__list { margin-top: clamp(2rem, 5vh, 3.5rem); max-width: 52rem; }
+/* ── 5 · FICHA TÉCNICA ──────────────────────────────────────
+   Anclada: la cámara a la izquierda, a sangre, y las filas a la derecha. Cada
+   fila es un hito: la activa se enciende y la cámara va a la parte de la que
+   habla (src/camera.ts, data-shots). En vertical la cámara es una banda sticky
+   arriba y las filas pasan por debajo.                                   */
+.spec { position: relative; height: 460svh; border-top: 1px solid var(--rule); }
+.spec__pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 42%);
+  background: var(--bg);
+}
+.spec__cam { height: 100%; }
+.spec__body {
+  align-self: center;
+  display: grid;
+  gap: 1.25rem;
+  padding: 5.5rem var(--content-edge) 2rem clamp(1.75rem, 4vw, 4rem);
+  min-width: 0;
+}
+.spec__list { margin: 0; }
 .spec__row {
   display: grid;
-  grid-template-columns: minmax(9rem, 0.5fr) minmax(0, 1fr);
-  gap: 1.5rem;
-  padding-block: 1.1rem;
-  border-bottom: 1px solid var(--rule);
+  grid-template-columns: minmax(8rem, 0.5fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  padding: 0.55rem 0 0.55rem 1.15rem;
+  border-left: 1px solid transparent;
+  /* Como los hitos de la anatomía, pero el resto no se apaga tanto: son datos. */
+  opacity: 0.42;
+  transition: opacity 0.45s var(--ease), border-color 0.45s var(--ease);
 }
+.spec__row.is-on { opacity: 1; border-left-color: var(--accent); }
 .spec__row dt {
   font-size: 0.6875rem;
   letter-spacing: 0.2em;
@@ -340,14 +570,62 @@
   color: var(--fg-2);
   padding-top: 0.28rem;
 }
-.spec__row dd { margin: 0; font-family: var(--display); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.spec__row dd { margin: 0; font-family: var(--display); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+@media (max-aspect-ratio: 1 / 1) {
+  .spec { height: auto; }
+  .spec__pin { position: static; height: auto; overflow: visible; display: block; }
+  .spec__cam { position: sticky; top: 0; z-index: 1; height: auto; aspect-ratio: 16 / 10; }
+  .spec__body { padding: 1.5rem var(--content-edge) clamp(2.5rem, 6vh, 4rem) var(--content-inset); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spec { height: auto; }
+  .spec__pin { position: static; height: auto; overflow: visible; display: block; }
+  .spec__cam { position: static; aspect-ratio: 16 / 10; height: auto; }
+  .spec__row { opacity: 1; }
+}
 
 
-/* ── 6 · LA CASA ────────────────────────────────────────────── */
-.heritage { border-top: 1px solid var(--rule); }
-/* Su propia medida, como la ficha técnica: sin ella heredaba el ancho de la
-   sección y el año quedaba a 330px de su propia frase. */
-.timeline { list-style: none; padding: 0; margin: clamp(2rem, 5vh, 3.5rem) 0 0; max-width: 74rem; }
+/* ── 6 · LA CASA ────────────────────────────────────────────
+   El giro es el fondo: pantalla completa, velado, y encima el camino de los
+   años (src/heritage.ts). El pin es sticky; el escenario (.heritage__ui) es
+   la caja donde se calcula la curva y se colocan los años.        */
+.heritage { position: relative; height: 380svh; border-top: 1px solid var(--rule); }
+.heritage__pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+.heritage .seq__pin { position: absolute; inset: 0; height: auto; }
+/* El velo: el giro se lee como fondo, y el texto, encima, como texto. */
+.heritage .seq__pin::after {
+  background: linear-gradient(to right,
+    rgba(241, 234, 224, 0.94) 0%,
+    rgba(241, 234, 224, 0.78) 40%,
+    rgba(241, 234, 224, 0.5) 100%);
+}
+.heritage__ui {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: clamp(5rem, 11vh, 6.5rem) var(--content-edge) clamp(2rem, 5vh, 3.5rem) var(--content-inset);
+}
+.heritage__path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  display: none;
+}
+.heritage.is-path .heritage__path { display: block; }
+.heritage__line { fill: none; stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 4 6; }
+.heritage__trace { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+.heritage__dots circle { fill: var(--bg); stroke: var(--rule-strong); stroke-width: 1; transition: fill 0.4s var(--ease), stroke 0.4s var(--ease); }
+.heritage__dots circle.is-on { fill: var(--accent); stroke: var(--accent); }
+
+.timeline { list-style: none; padding: 0; margin: clamp(2rem, 5vh, 3.5rem) 0 0; }
 .timeline li {
   display: grid;
   grid-template-columns: minmax(6.5rem, 12rem) minmax(0, 1fr);
@@ -365,92 +643,215 @@
   font-variant-numeric: lining-nums tabular-nums;
 }
 .timeline p { color: var(--fg-2); max-width: 48ch; }
-@media (max-width: 700px) { .timeline li { grid-template-columns: 1fr; gap: 0.5rem; } }
+/* Sobre el camino: cada año cuelga de su punto. Los de la derecha hacia la
+   izquierda, y alternando por encima y por debajo de la línea. */
+.heritage.is-path .timeline { position: absolute; inset: 0; margin: 0; }
+.heritage.is-path .timeline li {
+  position: absolute;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
+  width: min(16rem, 22vw);
+  padding: 0;
+  border: 0;
+  transform: translate(0.9rem, 0.9rem);
+  opacity: 0;
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+.heritage.is-path .timeline li.is-above { transform: translate(0.9rem, calc(-100% - 0.9rem)); }
+.heritage.is-path .timeline li.is-right { transform: translate(calc(-100% - 0.9rem), 0.9rem); text-align: right; }
+.heritage.is-path .timeline li.is-right.is-above { transform: translate(calc(-100% - 0.9rem), calc(-100% - 0.9rem)); }
+.heritage.is-path .timeline li.is-right p { margin-left: auto; }
+.heritage.is-path .timeline li.is-on { opacity: 1; }
+.heritage.is-path .year { font-size: clamp(2rem, 3.4vw, 3rem); }
+.heritage.is-path .timeline p { font-size: 0.9rem; line-height: 1.5; max-width: 28ch; }
+@media (max-aspect-ratio: 1 / 1), (prefers-reduced-motion: reduce) {
+  .heritage { height: auto; }
+  .heritage__pin { position: static; height: auto; overflow: visible; }
+  .heritage__ui { position: relative; inset: auto; padding-block: var(--pad-section); }
+  /* `.seq:not(.hero) .seq__canvas` de sequence.css pesa (0,3,0) y va después:
+     aquí hace falta más especificidad o el lienzo se queda en banda a 10vh. */
+  .heritage.seq .seq__pin .seq__canvas, .heritage.seq .seq__pin .seq__still { inset: 0; top: 0; height: 100%; aspect-ratio: auto; object-fit: cover; }
+  /* Misma guerra de especificidad que el lienzo: el velo de sequence.css para
+     vertical pesa (0,3,1) y dejaba el fondo sin velar bajo el texto. */
+  .heritage.seq .heritage__pin .seq__pin::after {
+    background: rgba(241, 234, 224, 0.88);
+  }
+  .heritage.is-static .seq__pin { aspect-ratio: auto; height: auto; }
+  .timeline li { grid-template-columns: 1fr; gap: 0.5rem; }
+}
 
 
 /* ── 7 · COLECCIÓN ───────────────────────────────────────────
-   Lista editorial, no tarjetas. Al señalar una variante las otras se retiran
-   y el zapato de la derecha se viste con esa piel: es la manera de mirar un
-   muestrario, una pieza cada vez.                                    */
-.collection { border-top: 1px solid var(--rule); }
-.collection__media { margin: 0; display: grid; place-items: center; }
+   Anclada (src/collection.ts): el scroll pasa de una piel a otra. Detrás, el
+   nombre en letras enormes; en el centro el zapato recortado, vestido con la
+   piel activa por filtros; a la izquierda las tres, y solo la activa abre su
+   ficha. En vertical, la lista de siempre con la foto encima.          */
+.collection { position: relative; height: 340svh; border-top: 1px solid var(--rule); }
+.collection__pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--bg);
+}
+.collection .section-title {
+  position: absolute;
+  z-index: 3;
+  left: var(--content-inset);
+  top: clamp(5rem, 11vh, 6.5rem);
+}
+.collection__ghost {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  pointer-events: none;
+}
+.collection__ghost span {
+  grid-area: 1 / 1;
+  font-family: var(--display);
+  font-variation-settings: 'opsz' var(--opsz-display);
+  font-size: clamp(8rem, 24vw, 22rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: rgba(21, 19, 21, 0.07);
+  opacity: 0;
+  transform: translateY(0.06em);
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+  padding-left: 12vw;
+}
+.collection__ghost span.is-on { opacity: 1; transform: none; }
+.collection[data-look='rouge'] .collection__ghost span[data-look='rouge'] { color: rgba(193, 18, 31, 0.09); }
+.collection__media {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  top: 50%;
+  transform: translateY(-46%);
+  width: min(62vw, 110vh);
+  margin: 0;
+  pointer-events: none;
+}
 .collection__img {
   width: 100%;
-  height: 100%;
+  height: auto;
   object-fit: contain;
   transition: filter 0.9s var(--ease);
 }
 .collection[data-look='nuit'] .collection__img { filter: grayscale(1) contrast(1.18) brightness(0.72); }
 .collection[data-look='sable'] .collection__img { filter: sepia(0.55) saturate(0.32) brightness(1.06) contrast(0.96); }
-.edition { cursor: default; outline-offset: -4px; }
+.collection__count {
+  position: absolute;
+  z-index: 3;
+  right: var(--content-edge);
+  top: clamp(5.4rem, 11.5vh, 7rem);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+.collection__count span { color: var(--fg); }
+
 .editions {
   list-style: none;
+  margin: 0;
   padding: 0;
-  margin: clamp(2rem, 5vh, 3.5rem) 0 0;
-  border-top: 1px solid var(--rule);
+  position: absolute;
+  z-index: 3;
+  left: var(--content-inset);
+  bottom: clamp(2rem, 6vh, 4rem);
+  width: min(30rem, 38vw);
+  display: grid;
+  gap: 0.6rem;
 }
 .edition {
-  display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
-  grid-template-areas: 'name mat' 'name note' 'name price';
-  gap: clamp(1.25rem, 3.5vw, 3rem);
-  align-items: baseline;
-  padding-block: clamp(1.6rem, 4vh, 2.6rem);
-  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+  outline-offset: -4px;
+  padding-left: 1.15rem;
+  border-left: 1px solid transparent;
+  transition: border-color 0.5s var(--ease);
 }
+.edition.is-on { border-left-color: var(--accent); }
 .edition__name {
-  grid-area: name;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(1.9rem, 4vw, 3rem);
+  font-size: clamp(1.9rem, 3.6vw, 3rem);
   line-height: 1;
+  color: var(--fg-2);
+  transition: color 0.5s var(--ease);
 }
-.edition__mat { grid-area: mat; }
-.edition__note { grid-area: note; }
-/* El material va en cursiva de la Didone, no en versalitas rastreadas: dice lo
-   mismo y no viste de etiqueta algo que es descripción. */
+.edition.is-on .edition__name { color: var(--fg); }
+/* La ficha de cada variante se abre y se cierra con la altura de la rejilla. */
+.edition__more { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.7s var(--ease-reveal); }
+.edition__more > div { min-height: 0; overflow: hidden; display: grid; gap: 0.5rem; }
+.edition.is-on .edition__more { grid-template-rows: 1fr; }
+.edition__more > div > :first-child { margin-top: 0.75rem; }
 .edition__mat {
   font-family: var(--display);
   font-style: italic;
   font-size: 1.05rem;
   color: var(--fg-2);
 }
-.edition__note { color: var(--fg-2); font-size: 0.975rem; line-height: 1.62; }
-.edition__price {
-  grid-area: price;
-  margin-top: 0.4rem;
-  font-size: 0.875rem;
-  color: var(--fg-2);
-  white-space: nowrap;
-}
+.edition__note { color: var(--fg-2); font-size: 0.975rem; line-height: 1.62; max-width: 40ch; }
+.edition__price { font-size: 0.875rem; color: var(--fg-2); white-space: nowrap; padding-bottom: 0.4rem; }
 
-/* Solo con ratón: en táctil no hay "señalar", y el atenuado dejaría dos de
-   las tres variantes apagadas sin que nadie pueda encenderlas. */
-@media (hover: hover) {
-  .edition { transition: opacity 0.5s var(--ease); }
-  .editions:hover .edition { opacity: 0.32; }
-  .editions:hover .edition:hover { opacity: 1; }
-}
-
-@media (max-width: 820px) {
-  .edition { grid-template-columns: 1fr; grid-template-areas: 'name' 'mat' 'note' 'price'; gap: 0.6rem; }
+@media (max-aspect-ratio: 1 / 1), (prefers-reduced-motion: reduce) {
+  .collection { height: auto; padding: var(--pad-section) var(--content-edge) var(--pad-section) var(--content-inset); }
+  .collection__pin { position: static; height: auto; overflow: visible; display: grid; gap: 1.5rem; }
+  .collection .section-title { position: static; }
+  .collection__ghost, .collection__count { display: none; }
+  .collection__media { position: static; transform: none; width: 100%; }
+  .editions { position: static; width: auto; gap: 0; border-top: 1px solid var(--rule); }
+  .edition { padding: 1.4rem 0; border-left: 0; border-bottom: 1px solid var(--rule); }
+  .edition__more { grid-template-rows: 1fr; }
+  .edition__name { color: var(--fg); }
 }
 
 
-/* ── 8 · SOLICITAR UN PAR ───────────────────────────────────── */
-.request {
-  border-top: 1px solid var(--rule);
+/* ── 8 · SOLICITAR UN PAR ───────────────────────────────────
+   El paso cierra la página: la mujer se va por la derecha mientras bajas al
+   formulario, que va a la izquierda sobre un velo crema.        */
+.request { border-top: 1px solid var(--rule); }
+.request .seq__pin {
+  height: auto;
+  min-height: 100svh;
   display: grid;
-  grid-template-columns: minmax(0, 0.5fr) minmax(0, 1fr);
-  gap: clamp(2rem, 6vw, 5rem);
-  align-items: start;
+  align-items: center;
 }
-.request__aside { display: grid; gap: 2rem; }
-.request__num { font-family: var(--display); line-height: 0.86; letter-spacing: -0.03em; }
-.request__img { width: min(100%, 22rem); height: auto; }
-.request__n { font-size: clamp(4.5rem, 13vw, 10rem); font-variant-numeric: tabular-nums; }
-.request__d { font-size: clamp(1.5rem, 3.5vw, 2.75rem); color: var(--fg-2); }
-.request__body { display: grid; gap: 1.5rem; }
+.request .seq__pin::after {
+  background: linear-gradient(to right,
+    rgba(241, 234, 224, 0.96) 0%,
+    rgba(241, 234, 224, 0.9) 42%,
+    rgba(241, 234, 224, 0.35) 66%,
+    rgba(241, 234, 224, 0) 100%);
+}
+.request__inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 0.55fr) minmax(0, 1fr);
+  gap: 1.5rem clamp(2rem, 6vw, 5rem);
+  padding: clamp(6rem, 13vh, 9rem) var(--content-edge) clamp(3rem, 8vh, 6rem) var(--content-inset);
+}
+.request__num { grid-column: 1; font-family: var(--display); line-height: 0.86; letter-spacing: -0.03em; }
+.request__n { font-size: clamp(4.5rem, 11vw, 9rem); font-variant-numeric: tabular-nums; }
+.request__d { font-size: clamp(1.5rem, 3vw, 2.5rem); color: var(--fg-2); }
+.request__body { grid-column: 1; display: grid; gap: 1.5rem; }
+.request__closing {
+  grid-column: 2;
+  align-self: end;
+  justify-self: end;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(1.1rem, 1.6vw, 1.4rem);
+  color: var(--fg-2);
+  text-align: right;
+}
+.request.is-static .seq__pin { aspect-ratio: auto; }
+.request.is-static .seq__still { object-fit: cover; object-position: 60% 50%; }
 
 .form { display: grid; gap: 1.5rem; max-width: 30rem; margin-top: 0.75rem; }
 .field { display: grid; gap: 0.5rem; }
@@ -494,4 +895,139 @@
 .btn:hover { border-color: var(--accent); color: var(--accent); }
 .form__done { color: var(--accent); font-size: 0.95rem; }
 
-@media (max-width: 820px) { .request { grid-template-columns: 1fr; gap: 1.5rem; } }
+@media (max-aspect-ratio: 1 / 1) {
+  /* La banda del clip arriba, en flujo, y el formulario debajo. */
+  .request .seq__pin { display: block; min-height: 0; }
+  .request.seq .seq__pin .seq__canvas, .request.seq .seq__pin .seq__still,
+  .request.seq.is-static .seq__pin .seq__still {
+    position: relative;
+    inset: auto;
+    top: 0;
+    width: 100%;
+    height: auto;
+    aspect-ratio: var(--seq-ratio, 1.78);
+  }
+  .request .seq__pin::after { display: none; }
+  .request__inner { grid-template-columns: 1fr; padding-top: 2rem; }
+  .request__closing { grid-column: 1; justify-self: start; text-align: left; }
+}
+
+
+/* ── LA CÁMARA SOBRE FOTOS ───────────────────────────────────
+   Un marco, varias fotos apiladas y un scroll que mueve el objetivo por ellas
+   (src/camera.ts). Sin JS o con reduce-motion se ve la primera foto quieta:
+   el resto está a opacidad cero. Con la cámara en marcha, el JS fija a cada
+   foto su encaje en píxeles y solo toca `transform` y `opacity`.
+
+   El fondo del marco es el crema REAL del ciclorama de la foto maestra
+   (--cam-bg, medido por el build): cuando una foto no llena el marco, lo que
+   hay alrededor es más estudio, no un rectángulo de otro tono.        */
+.cam {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  background: var(--cam-bg, var(--bg-2));
+}
+.cam__layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  opacity: 0;
+}
+.cam__layer:first-child { opacity: 1; }
+.cam--contain .cam__layer { object-fit: contain; }
+.cam.is-live .cam__layer {
+  inset: auto;
+  object-fit: fill;
+  transform-origin: 0 0;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+/* A `contain` los cantos de la foto caen dentro del marco. El ciclorama y el
+   marco son casi el mismo crema, pero "casi" se ve; un fundido corto en los
+   cuatro cantos lo borra del todo. */
+.cam--contain .cam__layer {
+  mask-image:
+    linear-gradient(to right, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent);
+  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent);
+  -webkit-mask-composite: source-in;
+}
+/* La marca sobre el punto de interés: un anillo fino del rojo de la suela y
+   un punto. Aparece cuando el plano se asienta y se retira antes del fundido. */
+.cam__mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: -2.25rem 0 0 -2.25rem;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.cam__mark::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+
+/* ── 6 · ANATOMÍA ────────────────────────────────────────────
+   Como La punta: anclaje con `position: sticky`, no con un pin. Los hitos van
+   a la izquierda, colgando de la espina, y la cámara ocupa el resto a sangre:
+   la escama ampliada es un fondo demasiado vivo para leer encima.       */
+.anatomy { position: relative; height: 420svh; }
+.anatomy__pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(19rem, 38%) minmax(0, 1fr);
+  background: var(--bg);
+}
+.anatomy__ui {
+  align-self: center;
+  display: grid;
+  gap: 1.75rem;
+  padding: 5rem clamp(1.75rem, 4vw, 4rem) 2rem var(--content-inset);
+}
+.anatomy__cam { height: 100%; }
+@media (max-aspect-ratio: 1 / 1) {
+  .anatomy__pin { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
+  /* La foto arriba, en la fila que crece; los hitos debajo, en la suya. Sin
+     `order` la cámara caía en la fila `auto` y, con solo hijos absolutos, medía cero. */
+  .anatomy__cam { order: -1; min-height: 0; }
+  .anatomy__ui {
+    padding: 1.25rem var(--content-edge) clamp(1.5rem, 5vh, 3rem) var(--content-inset);
+    gap: 1rem;
+  }
+  .anatomy .beats { gap: 0.4rem; }
+  /* En vertical la lista entera no cabe debajo de la foto sin dejarla en una
+     tira: solo el hito encendido enseña su frase. */
+  .anatomy .beat:not(.is-on) p { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .anatomy { height: auto; }
+  .anatomy__pin { position: static; height: auto; }
+  .anatomy__cam { aspect-ratio: 4 / 5; }
+  .anatomy__ui { padding-block: clamp(2rem, 6vh, 4rem); }
+  .anatomy .beat:not(.is-on) p { display: block; }
+}
+
+
