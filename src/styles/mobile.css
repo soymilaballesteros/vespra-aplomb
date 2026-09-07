@@ -102,7 +102,6 @@
   .detail   { height: 190svh; }
   .anatomy  { height: 260svh; }
   .plan__scroll { height: 165svh; }
-  .atelier  { height: auto; }
 }
 
 
@@ -121,29 +120,13 @@
 }
 
 
-/* ── 6 · LA PUNTA Y LA FICHA ─────────────────────────────────────────────
+/* ── 6 · LA PUNTA ────────────────────────────────────────────────────────
    Dos secciones donde el texto vive bajo una imagen a sangre. El titular era
    de escritorio y en vertical se comía tres líneas. */
 @media (max-aspect-ratio: 1 / 1) {
   .detail__title { font-size: clamp(1.9rem, 8.4vw, 2.9rem); }
   .detail__ui .lede { font-size: 0.95rem; line-height: 1.5; }
   .detail__ui { gap: 0.85rem; }
-
-  /* La cámara de la ficha es `sticky top: 0` y se metía debajo de la barra.
-     Empieza donde acaba el papel de la barra. */
-  .spec__cam { top: var(--bar, 3.25rem); aspect-ratio: 4 / 3; }
-  /* Y las filas pasaban POR DEBAJO de ella: «Ficha técnica» se leía partido en
-     dos, con la mitad de arriba comida por la foto. La ficha es papel y sube
-     por encima de la fotografía, como una hoja que se desliza sobre la mesa:
-     la cámara se ve mientras se lee la cabecera y el papel la va tapando. */
-  .spec__body {
-    position: relative;
-    z-index: 2;
-    background: var(--bg);
-    padding-top: 2rem;
-  }
-  .spec__row { grid-template-columns: minmax(6.5rem, 0.6fr) minmax(0, 1fr); gap: 0.9rem; }
-  .spec__row dd { font-size: 1rem; }
 }
 
 
@@ -171,6 +154,120 @@
   .year { font-size: clamp(1.8rem, 8vw, 2.6rem); }
   .timeline p { font-size: 0.95rem; line-height: 1.5; }
   .timeline li { padding-block: 1.25rem; }
+}
+
+
+/* ── 10 · LA FICHA: EL ZAPATO NO SE VA ───────────────────────────────────
+   La cámara es la ficha: cada fila la lleva a la parte de la que habla. En
+   vertical se quedaba `sticky` pero las filas pasaban POR DEBAJO y la cortaban
+   con un canto duro («Ficha técnica» salía partido en dos), y al arreglarlo
+   tapándola con papel el zapato desaparecía a media lista. Ahora:
+
+   · El título va ANTES de la cámara, en flujo: `display: contents` en el
+     cuerpo saca el h2 y la lista al mismo nivel que la figura, y `order` los
+     coloca —título, cámara, filas—.
+   · La cámara es pegajosa bajo la barra hasta el final de la sección: el
+     zapato acompaña a todas las filas.
+   · Su canto inferior es un fundido a papel, no un corte: las filas se
+     disuelven al entrar debajo en vez de partirse.                          */
+@media (max-aspect-ratio: 1 / 1) {
+  .spec__pin { display: flex; flex-direction: column; }
+  .spec__body { display: contents; }
+  .spec .section-title {
+    order: 0;
+    padding: calc(var(--bar, 3.25rem) + 1.5rem) var(--content-edge) 1.25rem var(--content-inset);
+  }
+  .spec__cam {
+    order: 1;
+    position: sticky;
+    top: var(--bar, 3.25rem);
+    z-index: 1;
+    aspect-ratio: 3 / 2;
+    height: auto;
+  }
+  .spec__cam::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3.5rem;
+    pointer-events: none;
+    background: linear-gradient(to top, var(--bg) 0%, rgba(241, 234, 224, 0.75) 45%, rgba(241, 234, 224, 0) 100%);
+  }
+  .spec__list {
+    order: 2;
+    padding: 1.25rem var(--content-edge) clamp(2.5rem, 6vh, 4rem) var(--content-inset);
+  }
+  .spec__row { grid-template-columns: minmax(6.5rem, 0.6fr) minmax(0, 1fr); gap: 0.9rem; padding-block: 0.7rem; }
+  .spec__row dd { font-size: 1rem; }
+}
+
+
+/* ── 11 · EL ATELIER: EL CARRIL, TAMBIÉN AQUÍ ────────────────────────────
+   Apilados, los tres pasos eran tres fotos con su pie, una debajo de otra:
+   una galería. El carril de la web —tres paneles que pasan de lado al ritmo
+   del scroll, con la foto deslizándose detrás del texto— es justo lo que un
+   teléfono sabe hacer mejor. Se conserva, con el panel recompuesto en
+   vertical: foto a sangre, y abajo el número en rojo con el título y el texto
+   sobre la banda de papel. El contador «01 / 03» se queda a la derecha del
+   título, como en la web.                                                   */
+@media (max-aspect-ratio: 1 / 1) {
+  .atelier { height: 260svh; }
+  .atelier__head {
+    padding: calc(var(--bar, 3.25rem) + 1.25rem) var(--content-edge) 1rem var(--content-inset);
+    gap: 1rem;
+  }
+  .craft__img { object-position: 50% 40%; }
+  .craft__body {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 1rem;
+    row-gap: 0.5rem;
+    padding: clamp(4rem, 12vh, 6rem) var(--content-edge) clamp(2rem, 6vh, 3.5rem) var(--content-inset);
+    background: linear-gradient(to top,
+      rgba(241, 234, 224, 0.97) 0%,
+      rgba(241, 234, 224, 0.93) 48%,
+      rgba(241, 234, 224, 0.6) 76%,
+      rgba(241, 234, 224, 0) 100%);
+  }
+  .craft__num { font-size: clamp(2.6rem, 11vw, 3.6rem); }
+  .craft h3 { font-size: clamp(1.7rem, 7.6vw, 2.4rem); }
+  .craft p { font-size: 0.95rem; line-height: 1.5; max-width: none; }
+}
+
+
+/* ── 12 · LA COLECCIÓN: LA MISMA ESCENA, DE PIE ──────────────────────────
+   En vertical se había reducido a una foto y una lista con las tres fichas
+   abiertas: se perdía lo que la hace —el nombre en letras enormes detrás, el
+   zapato vistiéndose con cada piel al bajar, una sola ficha abierta—. Se
+   recompone la escena anclada para un teléfono: título arriba, el nombre
+   gigante detrás, el zapato en el tercio central y las tres pieles abajo, con
+   la activa desplegada. El scroll sigue pasando de una piel a otra y tocar un
+   nombre lleva a su tramo, como en la web.                                  */
+@media (max-aspect-ratio: 1 / 1) {
+  .collection { height: 260svh; }
+  .collection .section-title { top: calc(var(--bar, 3.25rem) + 1.25rem); }
+  .collection__count { top: calc(var(--bar, 3.25rem) + 1.9rem); }
+  .collection__ghost { align-items: start; padding-top: 30vh; }
+  .collection__ghost span { font-size: clamp(6rem, 30vw, 9rem); padding-left: 0; }
+  .collection__media {
+    left: 0;
+    right: 0;
+    top: 27vh;
+    transform: none;
+    width: 100%;
+  }
+  .editions {
+    left: var(--content-inset);
+    right: var(--content-edge);
+    width: auto;
+    bottom: clamp(1.5rem, 5vh, 3rem);
+    gap: 0.35rem;
+  }
+  .edition { padding-left: 0.9rem; }
+  .edition__name { font-size: clamp(1.6rem, 7.4vw, 2.4rem); }
+  .edition__more > div > :first-child { margin-top: 0.5rem; }
+  .edition__mat { font-size: 0.95rem; }
+  .edition__note { font-size: 0.9rem; line-height: 1.5; }
+  .edition__price { font-size: 0.8125rem; padding-bottom: 0.2rem; }
 }
 
 

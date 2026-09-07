@@ -14,8 +14,10 @@ gsap.registerPlugin(ScrollTrigger)
  * la foto "pase" detrás del texto en vez de ir pegada a él.
  *
  * Como en el plano y la punta, el anclaje es `sticky`, no un pin de
- * ScrollTrigger, y el trigger se crea cuando la sección se acerca. En vertical
- * y con reduce-motion el CSS apila los paneles y aquí no se hace nada.
+ * ScrollTrigger, y el trigger se crea cuando la sección se acerca. Con
+ * reduce-motion el CSS apila los paneles y aquí no se hace nada. En vertical
+ * el carril va igual: es la pantalla para la que se inventó pasar páginas de
+ * lado con el pulgar, y apilado perdía justo eso.
  */
 const PARALLAX = 0.06 // fracción del ancho del panel que recorre la foto
 
@@ -31,14 +33,12 @@ export function initAtelier(): void {
   if (panels.length < 2) return
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-  const landscape = window.matchMedia('(min-aspect-ratio: 1/1)')
   let width = 0
   const measure = (): void => { width = pin.clientWidth }
 
   let current = -1
   const render = (p: number): void => {
-    // En vertical el CSS apila los paneles y anula el transform; no se toca nada.
-    if (!landscape.matches || !width) return
+    if (!width) return
     const travel = (panels.length - 1) * width
     const x = -p * travel
     track.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`

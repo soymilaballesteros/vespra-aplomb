@@ -535,9 +535,11 @@
   max-width: 52ch;
 }
 
-/* En vertical (y con reduce-motion) no hay carril: los tres paneles se apilan,
-   cada uno con su foto y su texto debajo, en flujo. */
-@media (max-aspect-ratio: 1 / 1), (prefers-reduced-motion: reduce) {
+/* Con reduce-motion no hay carril: los tres paneles se apilan, cada uno con
+   su foto y su texto debajo, en flujo. En vertical el carril SÍ va (ver
+   mobile.css): un teléfono es la pantalla para la que se inventó pasar
+   páginas de lado con el pulgar. */
+@media (prefers-reduced-motion: reduce) {
   .atelier { height: auto; }
   .atelier__pin { position: static; height: auto; overflow: visible; display: block; }
   .atelier__count { display: none; }
@@ -556,10 +558,6 @@
     padding: 1.25rem var(--content-edge) 0 var(--content-inset);
     grid-template-columns: auto minmax(0, 1fr);
   }
-}
-@media (max-aspect-ratio: 1 / 1) {
-  .craft__img { aspect-ratio: 4 / 5; }
-  .atelier__track { padding-bottom: 0; }
 }
 
 
@@ -833,7 +831,10 @@
 .edition__note { color: var(--fg-2); font-size: 0.975rem; line-height: 1.62; max-width: 40ch; }
 .edition__price { font-size: 0.875rem; color: var(--fg-2); white-space: nowrap; padding-bottom: 0.4rem; }
 
-@media (max-aspect-ratio: 1 / 1), (prefers-reduced-motion: reduce) {
+/* Solo con reduce-motion se desancla; en vertical el pin se recompone en
+   mobile.css con las mismas piezas: nombre detrás, zapato en medio, pieles
+   abajo. */
+@media (prefers-reduced-motion: reduce) {
   .collection { height: auto; padding: var(--pad-section) var(--content-edge) var(--pad-section) var(--content-inset); }
   .collection__pin { position: static; height: auto; overflow: visible; display: grid; gap: 1.5rem; }
   .collection .section-title { position: static; }

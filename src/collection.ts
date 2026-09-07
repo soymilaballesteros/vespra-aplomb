@@ -11,8 +11,9 @@ gsap.registerPlugin(ScrollTrigger)
  * ficha y el zapato se viste con esa piel (filtros CSS por `data-look` en la
  * sección). Tocar una variante lleva el scroll a su tramo.
  *
- * En vertical, y con reduce-motion, no hay pin: al señalar (o enfocar, o
- * tocar) una variante cambia la piel, y todas enseñan su ficha.
+ * Solo con reduce-motion se desancla: al señalar (o enfocar, o tocar) una
+ * variante cambia la piel, y todas enseñan su ficha. En vertical el pin va
+ * igual, recompuesto en mobile.css.
  */
 export function initCollection(): void {
   const section = document.getElementById('coleccion')
@@ -32,8 +33,7 @@ export function initCollection(): void {
   }
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const landscape = window.matchMedia('(min-aspect-ratio: 1/1)')
-  const driven = (): boolean => landscape.matches && !reduced
+  const driven = (): boolean => !reduced
 
   for (const ed of editions) {
     ed.tabIndex = 0
