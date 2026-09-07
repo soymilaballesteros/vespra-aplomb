@@ -8,6 +8,7 @@ import './styles/base.css'
 import './styles/chrome.css'
 import './styles/sections.css'
 import './styles/sequence.css'
+import './styles/mobile.css'
 
 import ScrollTrigger from 'gsap/ScrollTrigger'
 import { ScrollSequence } from './scroll-sequence'

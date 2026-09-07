@@ -1,0 +1,186 @@
+/* ── EL MÓVIL ────────────────────────────────────────────────────────────
+   La web se diseñó de lado, en un portátil, y de lado está bien. Pero el reel
+   se comparte y se ve en un teléfono en vertical, y ahí la página tenía tres
+   problemas que ninguna medida de escritorio arregla:
+
+   1. La barra flotaba sobre nada. Sobre las fotos del atelier —oscuras— el
+      logotipo desaparecía, y en cada transición el texto de la sección de
+      arriba pasaba POR DEBAJO y se cruzaba con «VESPRA». En un vertical el
+      contenido va a todo el ancho, así que siempre pasa por ahí: en horizontal
+      no ocurría porque la sangría lo apartaba.
+   2. Las secuencias dejaban medio teléfono vacío. La banda de la foto se
+      colocaba a 10vh y el texto se anclaba abajo del todo; entre los dos
+      quedaba un tercio de pantalla de crema. Aquí la foto y su texto viajan
+      juntos, como un bloque, centrado.
+   3. Veintisiete pantallas de scroll. En una web que se enseña con el pulgar
+      eso es demasiado camino para el mismo contenido: los carriles anclados se
+      acortan.
+
+   Esta hoja va la última a propósito: solo toca el vertical y solo corrige;
+   la dirección de arte la siguen mandando las otras.                        */
+
+
+/* ── 1 · LA BARRA ────────────────────────────────────────────────────────
+   Papel opaco, no un degradado. Deja de ser una capa transparente sobre la
+   fotografía y pasa a ser lo que ya era en el resto de la página: papel. Lo
+   que scrollea por debajo desaparece limpiamente bajo ella en vez de cruzarse
+   con el logotipo, y sobre las fotos oscuras del atelier vuelve a leerse. */
+@media (max-width: 700px) {
+  .topbar {
+    background: var(--bg);
+    border-bottom: 1px solid var(--rule);
+    padding-block: 0.65rem;
+    /* La muesca del iPhone: en Safari la barra empieza detrás del reloj. */
+    padding-top: max(0.65rem, env(safe-area-inset-top));
+  }
+  .wordmark { font-size: 1.15rem; letter-spacing: 0.14em; }
+  .topnav a { padding-block: 0.7rem; }
+
+  /* Todo lo que se ancla arriba tiene que empezar por debajo de la barra.
+     Antes cada sección elegía su propio hueco y ninguna acertaba. */
+  :root { --bar: 3.25rem; }
+}
+
+
+/* ── 2 · LAS SECUENCIAS: LA FOTO Y SU TEXTO, JUNTOS ──────────────────────
+   El bloque —banda de imagen + titular + entradilla— se centra en la pantalla
+   y el texto va PEGADO al pie de la imagen, no al fondo del viewport. La
+   altura de la banda se calcula con la misma proporción real del fotograma
+   que usa el resto (--seq-ratio), así que la cuenta cuadra sea cual sea el
+   clip que esté activo.                                                    */
+@media (max-aspect-ratio: 1 / 1) {
+  .seq:not(.hero) .seq__canvas,
+  .seq:not(.hero) .seq__still {
+    top: var(--seq-top, 9vh);
+  }
+  /* El paso tiene una pantalla entera para él y su clip es apaisado: colgado a
+     9vh el bloque quedaba en el techo con un tercio de crema debajo. Baja hasta
+     repartir el aire por igual arriba y abajo. */
+  .paso { --seq-top: 21vh; }
+  .seq:not(.hero) .seq__ui,
+  .seq:not(.hero) .seq__ui--top {
+    top: calc(var(--seq-top, 9vh) + (100vw / var(--seq-ratio, 1.25)) + 1.5rem);
+    bottom: auto;
+    gap: 0.9rem;
+  }
+  /* El asiento del texto ya no tiene que velar media pantalla: la imagen
+     acaba justo encima. */
+  .seq:not(.hero) .seq__pin::after {
+    background: linear-gradient(to top,
+      rgba(241, 234, 224, 0.9) 0%,
+      rgba(241, 234, 224, 0.5) 18%,
+      rgba(241, 234, 224, 0) 34%);
+  }
+  /* Dos líneas de titular y cuatro de entradilla en 390 px de ancho ocupan
+     media pantalla. Se aprieta la medida: el titular sigue siendo grande
+     —es lo que se ve en el reel— pero la entradilla deja de ser un muro. */
+  .seq__heading { font-size: clamp(1.9rem, 8.4vw, 2.9rem); line-height: 1.02; }
+  .seq__ui .lede,
+  .paso .seq__ui--top .lede { font-size: 0.95rem; line-height: 1.5; max-width: 38ch; }
+}
+
+
+/* ── 3 · EL HERO ─────────────────────────────────────────────────────────
+   El zapato entero, más arriba, y el titular abajo sin tocarlo. Antes el
+   poster reservaba 38vh al pie para el texto y el zapato se quedaba pequeño
+   en la mitad de arriba; el titular tiene su propio suelo, así que la foto
+   puede bajar hasta él. */
+@media (max-aspect-ratio: 1 / 1) {
+  .hero__poster { inset: calc(var(--bar, 3.25rem) + 1vh) 0 32vh 0; }
+  .hero__title { font-size: clamp(2.5rem, 11.5vw, 4.2rem); }
+  .hero__lede { font-size: 0.95rem; line-height: 1.5; max-width: 40ch; }
+  .hero__copy { bottom: calc(clamp(2rem, 6vh, 4rem) + 5.6rem); gap: 0.9rem; }
+}
+
+
+/* ── 4 · MENOS CAMINO ────────────────────────────────────────────────────
+   Los carriles anclados se midieron para una rueda de ratón. Con el pulgar,
+   el mismo recorrido se hace largo y la gente se sale antes de llegar a la
+   colección. Se acortan a algo más de la mitad: la animación es la misma, solo
+   que avanza más deprisa por gesto.                                        */
+@media (max-aspect-ratio: 1 / 1) {
+  .detail   { height: 190svh; }
+  .anatomy  { height: 260svh; }
+  .plan__scroll { height: 165svh; }
+  .atelier  { height: auto; }
+}
+
+
+/* ── 5 · LA ANATOMÍA ─────────────────────────────────────────────────────
+   La foto arriba y los cinco hitos abajo no caben cómodos: la lista se aprieta
+   y la foto recupera el sitio que le sobraba a los apagados. */
+@media (max-aspect-ratio: 1 / 1) {
+  .anatomy__ui { gap: 0.6rem; padding-top: 1rem; }
+  .anatomy .beats { gap: 0.15rem; }
+  .anatomy .beat { padding-left: 0.9rem; }
+  .anatomy .beat h3 { font-size: 1.35rem; }
+  .anatomy .beat p { font-size: 0.9rem; line-height: 1.45; }
+  /* Los apagados son una lista de índice, no párrafos: bajan de peso para que
+     el encendido cante. */
+  .anatomy .beat:not(.is-on) { opacity: 0.26; }
+}
+
+
+/* ── 6 · LA PUNTA Y LA FICHA ─────────────────────────────────────────────
+   Dos secciones donde el texto vive bajo una imagen a sangre. El titular era
+   de escritorio y en vertical se comía tres líneas. */
+@media (max-aspect-ratio: 1 / 1) {
+  .detail__title { font-size: clamp(1.9rem, 8.4vw, 2.9rem); }
+  .detail__ui .lede { font-size: 0.95rem; line-height: 1.5; }
+  .detail__ui { gap: 0.85rem; }
+
+  /* La cámara de la ficha es `sticky top: 0` y se metía debajo de la barra.
+     Empieza donde acaba el papel de la barra. */
+  .spec__cam { top: var(--bar, 3.25rem); aspect-ratio: 4 / 3; }
+  /* Y las filas pasaban POR DEBAJO de ella: «Ficha técnica» se leía partido en
+     dos, con la mitad de arriba comida por la foto. La ficha es papel y sube
+     por encima de la fotografía, como una hoja que se desliza sobre la mesa:
+     la cámara se ve mientras se lee la cabecera y el papel la va tapando. */
+  .spec__body {
+    position: relative;
+    z-index: 2;
+    background: var(--bg);
+    padding-top: 2rem;
+  }
+  .spec__row { grid-template-columns: minmax(6.5rem, 0.6fr) minmax(0, 1fr); gap: 0.9rem; }
+  .spec__row dd { font-size: 1rem; }
+}
+
+
+/* ── 7 · EL PLANO ────────────────────────────────────────────────────────
+   El dibujo se llevaba el alto que le dejaba la cabecera contando con una
+   cabecera de escritorio. En vertical el título y la entradilla ya están
+   apilados, así que hay que descontar más, y el pie del plano tiene que
+   caber. */
+@media (max-width: 700px) {
+  .plan__pin { padding-top: calc(var(--bar, 3.25rem) + 1.25rem); gap: 0.85rem; }
+  .plan__stage { width: min(100%, calc((100svh - 21rem) * 1.255)); }
+  .plan__cap { font-size: 0.8125rem; }
+  .plan__figure { font-size: clamp(1.9rem, 9vw, 2.6rem); }
+}
+
+
+/* ── 8 · LOS TÍTULOS DE SECCIÓN ──────────────────────────────────────────
+   Bodoni a tamaño de escritorio en 390 px parte palabras como «coleccción» en
+   dos. Se ajusta el paso para que cada título quepa en su línea. */
+@media (max-width: 700px) {
+  .section-title { font-size: clamp(2.2rem, 10vw, 3.4rem); }
+  .lede { font-size: 0.95rem; line-height: 1.55; }
+  .craft h3 { font-size: clamp(1.8rem, 8vw, 2.6rem); }
+  .craft p { font-size: 0.95rem; line-height: 1.55; }
+  .year { font-size: clamp(1.8rem, 8vw, 2.6rem); }
+  .timeline p { font-size: 0.95rem; line-height: 1.5; }
+  .timeline li { padding-block: 1.25rem; }
+}
+
+
+/* ── 9 · SIN DESPLAZAMIENTO LATERAL ──────────────────────────────────────
+   El plano y las capas de la cámara se salen del marco a propósito. Para que
+   eso no le dé scroll horizontal a la página se recorta en el cuerpo, pero con
+   `clip`, NO con `hidden`: `overflow-x: hidden` convierte el cuerpo en un
+   contenedor de scroll y eso deja SIN EFECTO todos los `position: sticky` de
+   dentro —la anatomía, la ficha, la punta y el plano se quedaban en blanco al
+   pasar por ellos. `clip` recorta igual y no crea contenedor.              */
+@media (max-width: 700px) {
+  body { overflow-x: clip; }
+}
