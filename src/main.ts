@@ -47,6 +47,10 @@ function initSequences(): void {
       fillPortrait: section.dataset.fillPortrait === 'cover' ? 'cover'
         : section.dataset.fillPortrait === 'subject' ? 'subject' : undefined,
       pinned: section.dataset.pin !== 'none',
+      pan: (() => {
+        const v = section.dataset.pan?.split(',').map(Number)
+        return v && v.length === 2 && v.every(Number.isFinite) ? [v[0], v[1]] as [number, number] : undefined
+      })(),
       fillX: Number(section.dataset.fillX) || undefined,
       fillY: Number(section.dataset.fillY) || undefined,
       start: section.dataset.start,

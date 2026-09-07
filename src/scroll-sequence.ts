@@ -119,6 +119,15 @@ export interface ScrollSequenceOptions {
   /** Encuadre en pantallas VERTICALES, si distinto. La casa: `cover`, para que el giro siga siendo fondo. */
   fillPortrait?: 'subject' | 'cover'
   /**
+   * Paneo, solo en `cover` y solo cuando el fotograma sobresale del lienzo por
+   * los lados: qué punto del fotograma (0 izquierda, 1 derecha) cae en el
+   * centro del lienzo al principio y al final del recorrido; entre medias se
+   * interpola con el scroll. Es cómo el paso sigue a la mujer en un teléfono:
+   * el lienzo es cuadrado, el clip apaisado, y ella cruza el encuadre de
+   * izquierda a derecha. Sin paneo, empezaba cortada y acababa fuera.
+   */
+  pan?: [number, number]
+  /**
    * Si la sección se FIJA (por defecto) o el lienzo vive dentro de una columna
    * `sticky` y el scrub recorre la altura natural de la sección. Es lo que usa
    * la casa: el zapato acompaña al texto sin pin.
@@ -167,6 +176,7 @@ export class ScrollSequence {
   private readonly focusX: number
   private readonly fillMode: 'subject' | 'cover'
   private readonly fillPortrait?: 'subject' | 'cover'
+  private readonly pan?: [number, number]
   private readonly pinned: boolean
   private readonly range: [number, number]
   private readonly fillX?: number
@@ -210,6 +220,7 @@ export class ScrollSequence {
     this.focusX = opts.focusX ?? 0.5
     this.fillMode = opts.fill ?? 'subject'
     this.fillPortrait = opts.fillPortrait
+    this.pan = opts.pan
     this.pinned = opts.pinned ?? true
     this.range = opts.range ?? [0, 1]
     this.fillX = opts.fillX
@@ -489,7 +500,15 @@ export class ScrollSequence {
     const focusX = h > w ? 0.5 : this.focusX
     const cx = ((sub.x0 + sub.x1) / 2) * iw * scale
     const cy = ((sub.y0 + sub.y1) / 2) * ih * scale
-    const dx = dw >= w ? Math.min(0, Math.max(w - dw, w * focusX - cx)) : w * focusX - cx
+    let dx = dw >= w ? Math.min(0, Math.max(w - dw, w * focusX - cx)) : w * focusX - cx
+    if (this.pan && mode === 'cover' && dw > w) {
+      // El punto del fotograma que toca estar en el centro, según el progreso.
+      // Con arranque suave (p^1.6): la mujer del paso tarda en echar a andar
+      // y una cámara lineal se le adelantaba y la dejaba a la izquierda.
+      const t = Math.pow(this.progress, 1.6)
+      const px = this.pan[0] + (this.pan[1] - this.pan[0]) * t
+      dx = Math.min(0, Math.max(w - dw, w / 2 - px * dw))
+    }
     const dy = dh >= h ? Math.min(0, Math.max(h - dh, h * focusY - cy)) : h * focusY - cy
 
     if (this.transparent) {

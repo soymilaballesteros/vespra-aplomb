@@ -53,15 +53,32 @@
   .seq:not(.hero) .seq__still {
     top: var(--seq-top, 9vh);
   }
-  /* El paso tiene una pantalla entera para él y su clip es apaisado: colgado a
-     9vh el bloque quedaba en el techo con un tercio de crema debajo. Baja hasta
-     repartir el aire por igual arriba y abajo. */
-  .paso { --seq-top: 21vh; }
   .seq:not(.hero) .seq__ui,
   .seq:not(.hero) .seq__ui--top {
     top: calc(var(--seq-top, 9vh) + (100vw / var(--seq-ratio, 1.25)) + 1.5rem);
     bottom: auto;
     gap: 0.9rem;
+  }
+  /* El paso: las piernas GRANDES, pegadas a la barra, y el texto debajo.
+     El clip es apaisado (1,7:1) y a lo ancho del teléfono la mujer salía
+     pequeña en medio de mucho crema. Mila lo pidió el 2026-09-07: "más
+     impresionante, las piernas más grandes justo debajo del menú". El lienzo
+     pasa a ser CUADRADO: como el paso dibuja a `cover`, el JS llena el alto y
+     recorta los lados —sobra ciclorama, no mujer— y ella crece un 70 %. La
+     banda empieza donde acaba el papel de la barra y el texto cuelga de su pie.
+     El tope de alto es por los teléfonos bajos: si el cuadrado no cabe con el
+     texto, se achata y `cover` recorta un poco menos. */
+  .paso { --seq-top: var(--bar, 3.25rem); --paso-h: min(100vw, calc(100svh - var(--bar, 3.25rem) - 12.5rem)); }
+  /* `.seq.paso`: la regla de sequence.css pesa (0,3,0) y con `.paso` a secas
+     ganaba ella y el lienzo seguía en banda apaisada. */
+  .seq.paso .seq__canvas,
+  .seq.paso .seq__still {
+    aspect-ratio: auto;
+    height: var(--paso-h);
+    object-fit: cover;
+  }
+  .seq.paso .seq__ui--top {
+    top: calc(var(--seq-top) + var(--paso-h) + 1.75rem);
   }
   /* El asiento del texto ya no tiene que velar media pantalla: la imagen
      acaba justo encima. */
