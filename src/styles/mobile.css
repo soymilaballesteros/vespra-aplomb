@@ -148,15 +148,34 @@
 
 
 /* ── 7 · EL PLANO ────────────────────────────────────────────────────────
-   El dibujo se llevaba el alto que le dejaba la cabecera contando con una
-   cabecera de escritorio. En vertical el título y la entradilla ya están
-   apilados, así que hay que descontar más, y el pie del plano tiene que
-   caber. */
+   Mila, en el iPhone: «el texto está alejado de la imagen, la imagen muy para
+   arriba». Tres causas, las tres de escritorio:
+   · El dibujo era una fila `1fr` y el pie se iba al fondo del pin: 150 px de
+     crema entre el alzado y su leyenda. Ahora las dos filas son `auto` y el
+     pie va pegado al dibujo.
+   · El pin medía 100svh aunque el contenido —título, entradilla, dibujo y
+     pie— ocupa 560. El pin pasa a medir lo que mide su contenido; `sticky` lo
+     sujeta igual mientras dura el carril, y lo que hay debajo sube.
+   · Las cifras (120 mm, 9 mm…) quedaban a media pantalla del pie. Se acercan.
+   El dibujo no puede crecer: ya va a todo el ancho y su alto lo fija la
+   proporción del encuadre estrecho (512:408). */
 @media (max-width: 700px) {
-  .plan__pin { padding-top: calc(var(--bar, 3.25rem) + 1.25rem); gap: 0.85rem; }
-  .plan__stage { width: min(100%, calc((100svh - 21rem) * 1.255)); }
-  .plan__cap { font-size: 0.8125rem; }
+  .plan__pin {
+    height: auto;
+    min-height: 0;
+    padding-top: calc(var(--bar, 3.25rem) + 1.25rem);
+    padding-bottom: 1.5rem;
+    gap: 1rem;
+  }
+  .plan__head { gap: 0.6rem; }
+  .plan__draw { grid-template-rows: auto auto; align-content: start; gap: 0.9rem; }
+  .plan__stage { width: 100%; }
+  .plan__cap { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
+  .plan__figures { margin-top: 1.25rem; }
+  .plan__fig { padding-top: 1rem; }
+  .plan__fig:nth-child(n + 3) { margin-top: 1rem; }
   .plan__figure { font-size: clamp(1.9rem, 9vw, 2.6rem); }
+  .plan { padding-bottom: 3.5rem; }
 }
 
 
